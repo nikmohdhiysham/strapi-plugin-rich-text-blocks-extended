@@ -4,7 +4,7 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.customFields.register({
     name: "rich-text-blocks-extended",
     plugin: "rich-text-blocks-extended",
-    type: "string",
+    type: "json",
     inputSize: {
       default: 12,
       isResizable: false
