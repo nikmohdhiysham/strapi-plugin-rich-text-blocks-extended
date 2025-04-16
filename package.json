@@ -58,7 +58,7 @@
   },
   "strapi": {
     "kind": "plugin",
-    "name": "strapi-plugin-rich-text-blocks-extended",
+    "name": "rich-text-blocks-extended",
     "displayName": "Rich Text Blocks (Extended Version)",
     "description": "An extended version of the JSON based native strapi field \"Rich Text (Blocks)\""
   },
