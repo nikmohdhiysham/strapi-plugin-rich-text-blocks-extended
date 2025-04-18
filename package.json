@@ -33,12 +33,17 @@
   "dependencies": {
     "@strapi/design-system": "^2.0.0-rc.22",
     "@strapi/icons": "^2.0.0-rc.22",
-    "react-intl": "^7.1.10"
+    "react-intl": "^7.1.10",
+    "prismjs": "1.30.0",
+    "slate": "0.94.1",
+    "slate-history": "0.93.0",
+    "slate-react": "0.98.3"
   },
   "devDependencies": {
     "@strapi/strapi": "^5.12.5",
     "@strapi/sdk-plugin": "^5.3.2",
     "prettier": "^3.5.3",
+    "@types/prismjs": "1.26.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.0",

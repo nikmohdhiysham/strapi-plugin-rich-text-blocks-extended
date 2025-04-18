@@ -1,69 +1,45 @@
-import { Field, Box, TextInput} from '@strapi/design-system';
-import { useIntl } from 'react-intl';
+import * as React from 'react';
+import { BlocksInput } from './BlocksInput/BlocksInput';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+
 
 interface InputProps {
-  name: string;
-  onChange: (event: { target: { name: string; value: string; type: string } }) => void;
-  value: string;
   attribute: {
-    required: boolean;
-    options: {
-      blocks?: any;
+    type: string;
+    customField: string;
+    options?: {
+      url?: string;
+      disableIframe?: boolean;
+      defaultValue?: string;
+      required?: boolean;
+      regex?: string;
+      minLength?: number;
+      unique?: boolean;
     };
   };
-  description?: string;
+  description?: { id: string; defaultMessage: string };
   disabled?: boolean;
+  intlLabel?: { id: string; defaultMessage: string };
+  name: string;
+  onChange: (e: { target: { name: string; type: string; value: string } }) => void;
+  required?: boolean;
+  value?: string;
   error?: string;
-  intlLabel: {
-    id: string;
-    defaultMessage: string;
-  };
-  labelAction?: React.ReactNode;
 }
 
-const Input = ({
-  name,
-  onChange,
-  value,
-  attribute,
-  description,
-  disabled,
-  error,
-  intlLabel = {
-    id: 'rich-text-blocks-extended.field.label',
-    defaultMessage: 'Rich Text Blocks (Extended)',
-  },
-  labelAction,
-}: InputProps) => {
-  console.log(value, 'value');
-  const { formatMessage } = useIntl();
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  (props, ref) => {
 
-  return (
-    <Box style={{ width: '100%' }}>
-      <Field
-        name={name}
-        id={name}
-        error={error}
-        hint={description && formatMessage({ id: description, defaultMessage: description })}
-      >
-        <Field.Label action={labelAction}>
-          {formatMessage(intlLabel)}
-        </Field.Label>
-        <Box padding={4} background="neutral100">
-          <TextInput
-            name={name}
-            onChange={onChange}
-            value={value}
-            disabled={disabled}
-            required={attribute.required}
-          />
-        </Box>
-        <Field.Error />
-        <Field.Hint />
-      </Field>
-    </Box>
-  );
-};
+    console.log(props, 'props');
+
+    return  (
+      <DndProvider backend={HTML5Backend}>
+        <BlocksInput ref={ref} name="blocks" type="blocks" />
+      </DndProvider>
+    );
+  }
+);
 
 Input.displayName = 'RichTextBlocksExtendedInput';
 
