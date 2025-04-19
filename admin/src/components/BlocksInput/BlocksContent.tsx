@@ -16,9 +16,9 @@ import { ReactEditor, type RenderElementProps, type RenderLeafProps, Editable } 
 import { styled, CSSProperties, css } from 'styled-components';
 
 import { ItemTypes } from './utils/constants';
-import { useDragAndDrop, DIRECTIONS } from '../../hooks/useDragAndDrop';
+import { DIRECTIONS } from '../../hooks/useDragAndDrop';
 import { getTranslation } from '../../utils/getTranslation';
-import { useSafeDragDropManager } from './hooks/useSafeDragDropManager';
+import { useSafeDragAndDrop } from '../../hooks/useSafeDragAndDrop';
 
 import { decorateCode } from './Blocks/Code';
 import { type BlocksStore, useBlocksEditorContext } from './BlocksEditor';
@@ -137,15 +137,7 @@ const DragAndDropElement = ({
   const { editor, disabled, name, setLiveText } = useBlocksEditorContext('drag-and-drop');
   const { formatMessage } = useIntl();
   const [dragVisibility, setDragVisibility] = React.useState<CSSProperties['visibility']>('hidden');
-  
-  // Add this hook to safely get the dragDropManager
-  let dragDropManagerAvailable = false;
-  try {
-    useSafeDragDropManager();
-    dragDropManagerAvailable = true;
-  } catch (error) {
-    console.warn('DnD context not available, disabling drag and drop functionality');
-  }
+
 
   const handleMoveBlock = React.useCallback(
     (newIndex: Array<number>, currentIndex: Array<number>) => {
@@ -176,19 +168,17 @@ const DragAndDropElement = ({
 
   // Only use drag and drop when manager is available
   const [{ handlerId, isDragging, isOverDropTarget, direction }, blockRef, dropRef, dragRef] =
-    dragDropManagerAvailable
-      ? useDragAndDrop(!disabled, {
-          type: `${ItemTypes.BLOCKS}_${name}`,
-          index,
-          item: {
-            index,
-            displayedValue: children,
-          },
-          onDropItem(currentIndex, newIndex) {
-            if (newIndex) handleMoveBlock(newIndex, currentIndex);
-          },
-        })
-      : [{ handlerId: null, isDragging: false, isOverDropTarget: false, direction: null }, null, null, null];
+    useSafeDragAndDrop(!disabled, {
+      type: `${ItemTypes.BLOCKS}_${name}`,
+      index,
+      item: {
+        index,
+        displayedValue: children,
+      },
+      onDropItem(currentIndex, newIndex) {
+        if (newIndex) handleMoveBlock(newIndex, currentIndex);
+      },
+    })
 
   const composedBoxRefs = useComposedRefs(blockRef, dropRef as never);
 
