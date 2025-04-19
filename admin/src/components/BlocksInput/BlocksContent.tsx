@@ -1,4 +1,15 @@
 import * as React from 'react';
+import {
+  DndContext,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  DragEndEvent
+} from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import {
   Box,
@@ -7,7 +18,6 @@ import {
   FlexComponent,
   IconButton,
   IconButtonComponent,
-  useComposedRefs,
 } from '@strapi/design-system';
 import { Drag } from '@strapi/icons';
 import { useIntl } from 'react-intl';
@@ -15,10 +25,8 @@ import { Editor, Range, Transforms } from 'slate';
 import { ReactEditor, type RenderElementProps, type RenderLeafProps, Editable } from 'slate-react';
 import { styled, CSSProperties, css } from 'styled-components';
 
-import { ItemTypes } from './utils/constants';
 import { DIRECTIONS } from '../../hooks/useDragAndDrop';
 import { getTranslation } from '../../utils/getTranslation';
-import { useSafeDragAndDrop } from '../../hooks/useSafeDragAndDrop';
 
 import { decorateCode } from './Blocks/Code';
 import { type BlocksStore, useBlocksEditorContext } from './BlocksEditor';
@@ -127,7 +135,7 @@ type DragAndDropElementProps = Direction & {
   dragHandleTopMargin?: CSSProperties['marginTop'];
 };
 
-const DragAndDropElement = ({
+const SortableDragAndDropElement = ({
   children,
   index,
   setDragDirection,
@@ -138,56 +146,36 @@ const DragAndDropElement = ({
   const { formatMessage } = useIntl();
   const [dragVisibility, setDragVisibility] = React.useState<CSSProperties['visibility']>('hidden');
 
+  // Use useSortable from dnd-kit
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver: isOverDropTarget,
+  } = useSortable({ 
+    id: String(index[0]),
+    disabled: disabled
+  });
 
-  const handleMoveBlock = React.useCallback(
-    (newIndex: Array<number>, currentIndex: Array<number>) => {
-      Transforms.moveNodes(editor, {
-        at: currentIndex,
-        to: newIndex,
-      });
+  // Apply transform styles
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
-      // Add 1 to the index for the live text message
-      const currentIndexPosition = [currentIndex[0] + 1, ...currentIndex.slice(1)];
-      const newIndexPosition = [newIndex[0] + 1, ...newIndex.slice(1)];
-
-      setLiveText(
-        formatMessage(
-          {
-            id: getTranslation('components.Blocks.dnd.reorder'),
-            defaultMessage: '{item}, moved. New position in the editor: {position}.',
-          },
-          {
-            item: `${name}.${currentIndexPosition.join(',')}`,
-            position: `${newIndexPosition.join(',')} of ${editor.children.length}`,
-          }
-        )
-      );
-    },
-    [editor, formatMessage, name, setLiveText]
-  );
-
-  // Only use drag and drop when manager is available
-  const [{ handlerId, isDragging, isOverDropTarget, direction }, blockRef, dropRef, dragRef] =
-    useSafeDragAndDrop(!disabled, {
-      type: `${ItemTypes.BLOCKS}_${name}`,
-      index,
-      item: {
-        index,
-        displayedValue: children,
-      },
-      onDropItem(currentIndex, newIndex) {
-        if (newIndex) handleMoveBlock(newIndex, currentIndex);
-      },
-    })
-
-  const composedBoxRefs = useComposedRefs(blockRef, dropRef as never);
-
-  // Set Drag direction before loosing state while dragging
+  // Direction is determined by comparing y positions
   React.useEffect(() => {
-    if (direction) {
+    if (isOverDropTarget) {
+      // Direction is determined by transform, positive y means downward
+      const direction = transform?.y && transform.y > 0 
+        ? DIRECTIONS.DOWNWARD 
+        : DIRECTIONS.UPWARD;
       setDragDirection(direction);
     }
-  }, [direction, setDragDirection]);
+  }, [transform, isOverDropTarget, setDragDirection]);
 
   // On selection change hide drag handle
   React.useEffect(() => {
@@ -195,7 +183,11 @@ const DragAndDropElement = ({
   }, [editor.selection]);
 
   return (
-    <Wrapper ref={composedBoxRefs} $isOverDropTarget={isOverDropTarget}>
+    <Wrapper 
+      ref={setNodeRef} 
+      style={style} 
+      $isOverDropTarget={isOverDropTarget}
+    >
       {isOverDropTarget && (
         <DropPlaceholder
           borderStyle="solid"
@@ -212,27 +204,9 @@ const DragAndDropElement = ({
         <CloneDragItem dragHandleTopMargin={dragHandleTopMargin}>{children}</CloneDragItem>
       ) : (
         <DragItem
-          ref={dragRef as unknown as React.Ref<HTMLDivElement>}
-          data-handler-id={handlerId}
           gap={2}
           paddingLeft={2}
           alignItems="start"
-          onDragStart={(event) => {
-            const target = event.target as HTMLElement;
-            const currentTarget = event.currentTarget as HTMLElement;
-
-            // Dragging action should only trigger drag event when button is dragged, however update styles on the whole dragItem.
-            if (target.getAttribute('role') !== 'button') {
-              event.preventDefault();
-            } else {
-              // Setting styles using dragging state is not working, so set it on current target element as nodes get dragged
-              currentTarget.style.opacity = '0.5';
-            }
-          }}
-          onDragEnd={(event) => {
-            const currentTarget = event.currentTarget as HTMLElement;
-            currentTarget.style.opacity = '1';
-          }}
           onMouseMove={() => setDragVisibility('visible')}
           onSelect={() => setDragVisibility('visible')}
           onMouseLeave={() => setDragVisibility('hidden')}
@@ -242,19 +216,22 @@ const DragAndDropElement = ({
           <DragIconButton
             tag="div"
             contentEditable={false}
-            role="button"
-            tabIndex={0}
+            // role="button"
+            // tabIndex={0}
             withTooltip={false}
             label={formatMessage({
               id: getTranslation('components.DragHandle-label'),
               defaultMessage: 'Drag',
             })}
             onClick={(e) => e.stopPropagation()}
-            aria-disabled={disabled}
+            // aria-disabled={disabled}
             disabled={disabled}
             draggable
             // For some blocks top margin added to drag handle to align at the text level
             $dragHandleTopMargin={dragHandleTopMargin}
+            // Add dnd-kit listeners and attributes to the drag handle
+            {...attributes}
+            {...listeners}
           >
             <Drag color="primary500" />
           </DragIconButton>
@@ -348,20 +325,48 @@ const baseRenderElement = ({
   }
 
   return (
-    <DragAndDropElement
+    <SortableDragAndDropElement
       index={nodePath}
       setDragDirection={setDragDirection}
       dragDirection={dragDirection}
       dragHandleTopMargin={block.dragHandleTopMargin}
     >
       {block.renderElement(props)}
-    </DragAndDropElement>
+    </SortableDragAndDropElement>
   );
 };
 
 interface BlocksContentProps {
   placeholder?: string;
   ariaLabelId: string;
+}
+
+const handleMoveBlocks = (editor: Editor, event: React.KeyboardEvent<HTMLElement>) => {
+  if (!editor.selection) return;
+
+  const start = Range.start(editor.selection);
+  const currentIndex = [start.path[0]];
+  let newIndexPosition = 0;
+
+  if (event.key === 'ArrowUp') {
+    newIndexPosition = currentIndex[0] > 0 ? currentIndex[0] - 1 : currentIndex[0];
+  } else {
+    newIndexPosition =
+      currentIndex[0] < editor.children.length - 1 ? currentIndex[0] + 1 : currentIndex[0];
+  }
+
+  const newIndex = [newIndexPosition];
+
+  if (newIndexPosition !== currentIndex[0]) {
+    Transforms.moveNodes(editor, {
+      at: currentIndex,
+      to: newIndex,
+    });
+
+    // Use function arguments instead of accessing scope variables
+    return { currentIndex, newIndex };
+  }
+  return null;
 }
 
 const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
@@ -372,34 +377,32 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
   const [dragDirection, setDragDirection] = React.useState<DragDirection | null>(null);
   const { modalElement, handleConversionResult } = useConversionModal();
 
-  // Create renderLeaf function based on the modifiers store
-  const renderLeaf = React.useCallback(
-    (props: ExtendedRenderLeafProps) => baseRenderLeaf(props, modifiers),
-    [modifiers]
+  // Set up sensors for drag detection
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 5px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor)
   );
 
-  const handleMoveBlocks = (editor: Editor, event: React.KeyboardEvent<HTMLElement>) => {
-    if (!editor.selection) return;
+  // Handle dragging end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
 
-    const start = Range.start(editor.selection);
-    const currentIndex = [start.path[0]];
-    let newIndexPosition = 0;
+    const activeIndex = Number(active.id);
+    const overIndex = Number(over.id);
 
-    if (event.key === 'ArrowUp') {
-      newIndexPosition = currentIndex[0] > 0 ? currentIndex[0] - 1 : currentIndex[0];
-    } else {
-      newIndexPosition =
-        currentIndex[0] < editor.children.length - 1 ? currentIndex[0] + 1 : currentIndex[0];
-    }
-
-    const newIndex = [newIndexPosition];
-
-    if (newIndexPosition !== currentIndex[0]) {
+    if (activeIndex !== overIndex) {
+      // Move nodes in the editor
       Transforms.moveNodes(editor, {
-        at: currentIndex,
-        to: newIndex,
+        at: [activeIndex],
+        to: [overIndex],
       });
 
+      // Add liveText announcement
       setLiveText(
         formatMessage(
           {
@@ -407,15 +410,19 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
             defaultMessage: '{item}, moved. New position in the editor: {position}.',
           },
           {
-            item: `${name}.${currentIndex[0] + 1}`,
-            position: `${newIndex[0] + 1} of ${editor.children.length}`,
+            item: `${activeIndex + 1}`,
+            position: `${overIndex + 1} of ${editor.children.length}`,
           }
         )
       );
-
-      event.preventDefault();
     }
   };
+
+  // Create renderLeaf function based on the modifiers store
+  const renderLeaf = React.useCallback(
+    (props: ExtendedRenderLeafProps) => baseRenderLeaf(props, modifiers),
+    [modifiers]
+  );
 
   // Create renderElement function base on the blocks store
   const renderElement = React.useCallback(
@@ -541,7 +548,23 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
       });
 
       if (event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
-        handleMoveBlocks(editor, event);
+        const result = handleMoveBlocks(editor, event);
+        if (result) {
+          const { currentIndex, newIndex } = result;
+          setLiveText(
+            formatMessage(
+              {
+                id: getTranslation('components.Blocks.dnd.reorder'),
+                defaultMessage: '{item}, moved. New position in the editor: {position}.',
+              },
+              {
+                item: `block.${currentIndex[0] + 1}`,
+                position: `${newIndex[0] + 1} of ${editor.children.length}`,
+              }
+            )
+          );
+          event.preventDefault();
+        }
       }
     }
   };
@@ -596,6 +619,11 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
     }
   };
 
+  // Get sortable items from editor children
+  const sortableItems = React.useMemo(() => 
+    editor.children.map((_, index) => ({ id: String(index) }))
+  , [editor.children.length]);
+
   return (
     <Box
       ref={blocksRef}
@@ -610,24 +638,31 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
       paddingTop={6}
       paddingBottom={3}
     >
-      <StyledEditable
-        aria-labelledby={ariaLabelId}
-        readOnly={disabled}
-        placeholder={placeholder}
-        $isExpandedMode={isExpandedMode}
-        decorate={decorateCode}
-        renderElement={renderElement}
-        renderLeaf={renderLeaf}
-        onKeyDown={handleKeyDown}
-        scrollSelectionIntoView={handleScrollSelectionIntoView}
-        // As we have our own handler to drag and drop the elements returing true will skip slate's own event handler
-        onDrop={() => {
-          return true;
-        }}
-        onDragStart={() => {
-          return true;
-        }}
-      />
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext 
+          items={sortableItems}
+          strategy={verticalListSortingStrategy}
+        >
+          <StyledEditable
+            aria-labelledby={ariaLabelId}
+            readOnly={disabled}
+            placeholder={placeholder}
+            $isExpandedMode={isExpandedMode}
+            decorate={decorateCode}
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            onKeyDown={handleKeyDown}
+            scrollSelectionIntoView={handleScrollSelectionIntoView}
+            // Let the DndContext handle drag and drop
+            onDrop={() => true}
+            onDragStart={() => true}
+          />
+        </SortableContext>
+      </DndContext>
       {modalElement}
     </Box>
   );
