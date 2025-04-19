@@ -1,4 +1,4 @@
-import { Transforms, Editor, Element as SlateElement, Node, Range } from 'slate';
+import { Transforms, Editor, Element as SlateElement, Node, Range, Descendant } from 'slate';
 import { CustomElement, CustomText, LinkNode } from './types';
 
 const removeLink = (editor: Editor) => {
@@ -37,9 +37,17 @@ const insertLink = (editor: Editor, { url }: { url: string }) => {
 
       Transforms.insertNodes(editor, link);
     } else {
+      // Create a LinkNode with an empty children array
+      const linkNode: LinkNode = {
+        type: 'link',
+        url: url ?? '',
+        children: [],
+      };
+      
+      // Use it with wrapNodes
       Transforms.wrapNodes(
         editor, 
-        { type: 'link', url: url ?? '', children: [] } as LinkNode, 
+        linkNode, 
         { split: true }
       );
     }

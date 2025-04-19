@@ -444,7 +444,7 @@ const ListButton = ({ block, format, location = 'toolbar' }: ListButtonProps) =>
     return (
       <StyledMenuItem
         onSelect={() => toggleList(format)}
-        isActive={isListActive()}
+        $isActive={isListActive()}
         disabled={isListDisabled()}
       >
         <Icon />
@@ -532,7 +532,7 @@ const LinkButton = ({
 
   if (location === 'menu') {
     return (
-      <StyledMenuItem onSelect={addLink} isActive={isLinkActive()} disabled={isLinkDisabled()}>
+      <StyledMenuItem onSelect={addLink} $isActive={isLinkActive()} disabled={isLinkDisabled()}>
         <Link />
         {formatMessage(label)}
       </StyledMenuItem>
@@ -650,13 +650,13 @@ const MoreMenu = ({ setLastVisibleIndex, hasHiddenItems, rootRef, children }: Mo
   );
 };
 
-const StyledMenuItem = styled(Menu.Item)<{ isActive: boolean }>`
+const StyledMenuItem = styled(Menu.Item)<{ $isActive: boolean }>`
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary100};
   }
 
   ${(props) =>
-    props.isActive &&
+    props.$isActive &&
     css`
       font-weight: bold;
       background-color: ${({ theme }) => theme.colors.primary100};
@@ -671,8 +671,8 @@ const StyledMenuItem = styled(Menu.Item)<{ isActive: boolean }>`
   }
 
   svg {
-    fill: ${({ theme, isActive }) =>
-      isActive ? theme.colors.primary600 : theme.colors.neutral600};
+    fill: ${({ theme, $isActive }) =>
+      $isActive ? theme.colors.primary600 : theme.colors.neutral600};
   }
 `;
 
@@ -729,7 +729,7 @@ const BlocksToolbar = () => {
           />
         ),
         menu: (
-          <StyledMenuItem onSelect={handleSelect} isActive={isActive}>
+          <StyledMenuItem onSelect={handleSelect} $isActive={isActive}>
             <Icon />
             {formatMessage((modifier as { label: MessageDescriptor }).label)}
           </StyledMenuItem>

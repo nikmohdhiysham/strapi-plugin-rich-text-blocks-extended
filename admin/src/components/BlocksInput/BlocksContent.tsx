@@ -18,6 +18,7 @@ import { styled, CSSProperties, css } from 'styled-components';
 import { ItemTypes } from './utils/constants';
 import { useDragAndDrop, DIRECTIONS } from '../../hooks/useDragAndDrop';
 import { getTranslation } from '../../utils/getTranslation';
+import { useSafeDragDropManager } from './hooks/useSafeDragDropManager';
 
 import { decorateCode } from './Blocks/Code';
 import { type BlocksStore, useBlocksEditorContext } from './BlocksEditor';
@@ -25,7 +26,7 @@ import { useConversionModal } from './BlocksToolbar';
 import { type ModifiersStore } from './Modifiers';
 import { CustomElement, CustomText, getEntries, isLinkNode, isListNode } from './utils/types';
 
-const StyledEditable = styled(Editable)<{ isExpandedMode: boolean }>`
+const StyledEditable = styled(Editable)<{ $isExpandedMode: boolean }>`
   // The outline style is set on the wrapper with :focus-within
   outline: none;
   display: flex;
@@ -33,7 +34,7 @@ const StyledEditable = styled(Editable)<{ isExpandedMode: boolean }>`
   gap: ${({ theme }) => theme.spaces[3]};
   height: 100%;
   // For fullscreen align input in the center with fixed width
-  width: ${({ isExpandedMode: $isExpandedMode }) => ($isExpandedMode ? '512px' : '100%')};
+  width: ${({ $isExpandedMode }) => ($isExpandedMode ? '512px' : '100%')};
   margin: auto;
 
   > *:last-child {
@@ -41,23 +42,23 @@ const StyledEditable = styled(Editable)<{ isExpandedMode: boolean }>`
   }
 `;
 
-const Wrapper = styled<BoxComponent>(Box)<{ isOverDropTarget: boolean }>`
+const Wrapper = styled<BoxComponent>(Box)<{ $isOverDropTarget: boolean }>`
   position: ${({ $isOverDropTarget }) => $isOverDropTarget && 'relative'};
 `;
 
 type DragDirection = (typeof DIRECTIONS)[keyof typeof DIRECTIONS];
 
 const DropPlaceholder = styled<BoxComponent>(Box)<{
-  dragDirection: DragDirection | null;
-  placeholderMargin: 1 | 2;
+  $dragDirection: DragDirection | null;
+  $placeholderMargin: 1 | 2;
 }>`
   position: absolute;
   right: 0;
 
   // Show drop placeholder 8px above or below the drop target
-  ${({ dragDirection, theme, placeholderMargin }) => css`
-    top: ${dragDirection === DIRECTIONS.UPWARD && `-${theme.spaces[placeholderMargin]}`};
-    bottom: ${dragDirection === DIRECTIONS.DOWNWARD && `-${theme.spaces[placeholderMargin]}`};
+  ${({ $dragDirection,  theme, $placeholderMargin }) => css`
+    top: ${$dragDirection === DIRECTIONS.UPWARD && `-${theme.spaces[$placeholderMargin]}`};
+    bottom: ${$dragDirection === DIRECTIONS.DOWNWARD && `-${theme.spaces[$placeholderMargin]}`};
   `}
 `;
 
@@ -136,6 +137,15 @@ const DragAndDropElement = ({
   const { editor, disabled, name, setLiveText } = useBlocksEditorContext('drag-and-drop');
   const { formatMessage } = useIntl();
   const [dragVisibility, setDragVisibility] = React.useState<CSSProperties['visibility']>('hidden');
+  
+  // Add this hook to safely get the dragDropManager
+  let dragDropManagerAvailable = false;
+  try {
+    useSafeDragDropManager();
+    dragDropManagerAvailable = true;
+  } catch (error) {
+    console.warn('DnD context not available, disabling drag and drop functionality');
+  }
 
   const handleMoveBlock = React.useCallback(
     (newIndex: Array<number>, currentIndex: Array<number>) => {
@@ -164,18 +174,21 @@ const DragAndDropElement = ({
     [editor, formatMessage, name, setLiveText]
   );
 
+  // Only use drag and drop when manager is available
   const [{ handlerId, isDragging, isOverDropTarget, direction }, blockRef, dropRef, dragRef] =
-    useDragAndDrop(!disabled, {
-      type: `${ItemTypes.BLOCKS}_${name}`,
-      index,
-      item: {
-        index,
-        displayedValue: children,
-      },
-      onDropItem(currentIndex, newIndex) {
-        if (newIndex) handleMoveBlock(newIndex, currentIndex);
-      },
-    });
+    dragDropManagerAvailable
+      ? useDragAndDrop(!disabled, {
+          type: `${ItemTypes.BLOCKS}_${name}`,
+          index,
+          item: {
+            index,
+            displayedValue: children,
+          },
+          onDropItem(currentIndex, newIndex) {
+            if (newIndex) handleMoveBlock(newIndex, currentIndex);
+          },
+        })
+      : [{ handlerId: null, isDragging: false, isOverDropTarget: false, direction: null }, null, null, null];
 
   const composedBoxRefs = useComposedRefs(blockRef, dropRef as never);
 
@@ -192,7 +205,7 @@ const DragAndDropElement = ({
   }, [editor.selection]);
 
   return (
-    <Wrapper ref={composedBoxRefs} isOverDropTarget={isOverDropTarget}>
+    <Wrapper ref={composedBoxRefs} $isOverDropTarget={isOverDropTarget}>
       {isOverDropTarget && (
         <DropPlaceholder
           borderStyle="solid"
@@ -200,9 +213,9 @@ const DragAndDropElement = ({
           borderWidth="2px"
           width="calc(100% - 24px)"
           marginLeft="auto"
-          dragDirection={dragDirection}
+          $dragDirection={dragDirection}
           // For list items placeholder reduce the margin around
-          placeholderMargin={children.props.as && children.props.as === 'li' ? 1 : 2}
+          $placeholderMargin={children.props.as && children.props.as === 'li' ? 1 : 2}
         />
       )}
       {isDragging ? (
@@ -611,7 +624,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
         aria-labelledby={ariaLabelId}
         readOnly={disabled}
         placeholder={placeholder}
-        isExpandedMode={isExpandedMode}
+        $isExpandedMode={isExpandedMode}
         decorate={decorateCode}
         renderElement={renderElement}
         renderLeaf={renderLeaf}

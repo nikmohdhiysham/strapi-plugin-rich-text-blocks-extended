@@ -1,4 +1,4 @@
-import type { BaseElement, BaseText, Node } from 'slate';
+import type { BaseElement, BaseText, Node, Descendant } from 'slate';
 
 // Extend BaseElement to include type property
 interface CustomElement extends BaseElement {
@@ -16,14 +16,14 @@ interface CustomText extends BaseText {
 interface LinkNode extends CustomElement {
   type: 'link';
   url: string;
-  children: Node[];
+  children: Descendant[];
 }
 
 interface ListNode extends CustomElement {
   type: 'list';
   format: 'ordered' | 'unordered';
   indentLevel: number;
-  children: Node[];
+  children: Descendant[];
 }
 
 interface HeadingElement extends CustomElement {
