@@ -29,6 +29,7 @@ import {
 } from './BlocksEditor';
 import { insertLink } from './utils/links';
 import { type Block, CustomElement, getEntries, getKeys, ListNode } from './utils/types';
+import StyleToolbar from './StyleToolbar';
 
 const ToolbarWrapper = styled<FlexComponent>(Flex)`
   &[aria-disabled='true'] {
@@ -770,6 +771,8 @@ const BlocksToolbar = () => {
     <Toolbar.Root aria-disabled={disabled} asChild>
       <ToolbarWrapper gap={2} padding={2} width="100%">
         <BlocksDropdown />
+        <ToolbarSeparator />
+        <StyleToolbar />
         <ToolbarSeparator />
         <Toolbar.ToggleGroup type="multiple" asChild>
           <Flex direction="row" gap={1} grow={1} overflow="hidden">

@@ -3,7 +3,17 @@ import type { BaseElement, BaseText, Node, Descendant } from 'slate';
 // Extend BaseElement to include type property
 interface CustomElement extends BaseElement {
   type: string;
+  fontFamily?: string;
+  fontColor?: string;
+  fontSettings?: FontSetting[];
   [key: string]: unknown;
+}
+
+// Define font setting structure
+interface FontSetting {
+  breakpoint: 'mobile' | 'tablet' | 'desktop';
+  fontSize: string;
+  fontLeading?: string;
 }
 
 // Extend BaseText to include type property
@@ -30,6 +40,9 @@ interface HeadingElement extends CustomElement {
   type: 'heading';
   level: 1 | 2 | 3 | 4 | 5 | 6;
   children: CustomText[];
+  fontFamily?: string;
+  fontColor?: string;
+  fontSettings?: FontSetting[];
 }
 
 interface ImageElement extends CustomElement {
@@ -70,6 +83,7 @@ export {
   type Block, 
   type CustomElement,
   type CustomText, 
+  type FontSetting,
   type HeadingElement,
   type ImageElement,
   type LinkNode,
