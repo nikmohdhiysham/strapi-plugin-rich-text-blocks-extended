@@ -1,7 +1,6 @@
 import * as React from 'react';
-
-import * as Toolbar from '@radix-ui/react-toolbar';
 import { useElementOnScreen } from '@strapi/admin/strapi-admin';
+import * as Toolbar from '@radix-ui/react-toolbar';
 import {
   Flex,
   Tooltip,
@@ -29,19 +28,13 @@ import {
 } from './BlocksEditor';
 import { insertLink } from './utils/links';
 import { type Block, CustomElement, getEntries, getKeys, ListNode } from './utils/types';
-import StyleToolbar from './StyleToolbar';
+import StyleToolbar, { ToolbarSeparator } from './StyleToolbar';
 
 const ToolbarWrapper = styled<FlexComponent>(Flex)`
   &[aria-disabled='true'] {
     cursor: not-allowed;
     background: ${({ theme }) => theme.colors.neutral150};
   }
-`;
-
-const ToolbarSeparator = styled(Toolbar.Separator)`
-  background: ${({ theme }) => theme.colors.neutral150};
-  width: 1px;
-  height: 2.4rem;
 `;
 
 const FlexButton = styled<FlexComponent<'button'>>(Flex)`
@@ -773,7 +766,6 @@ const BlocksToolbar = () => {
         <BlocksDropdown />
         <ToolbarSeparator />
         <StyleToolbar />
-        <ToolbarSeparator />
         <Toolbar.ToggleGroup type="multiple" asChild>
           <Flex direction="row" gap={1} grow={1} overflow="hidden">
             <EditorToolbarObserver observedComponents={observedComponents} />

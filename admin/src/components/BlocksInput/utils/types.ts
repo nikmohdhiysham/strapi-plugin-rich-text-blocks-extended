@@ -14,6 +14,7 @@ interface FontSetting {
   breakpoint: 'mobile' | 'tablet' | 'desktop';
   fontSize: string;
   fontLeading?: string;
+  fontAlignment?: string;
 }
 
 // Extend BaseText to include type property

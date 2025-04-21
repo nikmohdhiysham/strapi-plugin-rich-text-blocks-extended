@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import * as Toolbar from '@radix-ui/react-toolbar';
 import {
   Box,
   Flex,
   SingleSelect,
   SingleSelectOption,
-  Typography,
-  Popover
+  Popover,
+  IconButton,
+  Tooltip
 } from '@strapi/design-system';
 import { Editor, Transforms, Node } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { styled } from 'styled-components';
+import { Cog } from '@strapi/icons';
+
+// Import icon components from FontSettingsIcons
+import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon, FontViewportIcon } from './FontSettingsIcons';
 
 import { useBlocksEditorContext } from './BlocksEditor';
 import { FontSetting, CustomElement } from './utils/types';
@@ -18,6 +24,7 @@ import {
   FONT_COLOR_OPTIONS,
   FONT_SIZE_OPTIONS,
   FONT_LEADING_OPTIONS,
+  FONT_ALIGNMENT_OPTIONS,
   VIEWPORT_OPTIONS
 } from './utils/styleConstants';
 
@@ -26,7 +33,14 @@ const DEFAULT_FONT_FAMILY = FONT_FAMILY_OPTIONS[0].value;
 const DEFAULT_FONT_COLOR = FONT_COLOR_OPTIONS[0].value;
 const DEFAULT_FONT_SIZE = FONT_SIZE_OPTIONS[0].value;
 const DEFAULT_FONT_LEADING = FONT_LEADING_OPTIONS[0].value;
+const DEFAULT_FONT_ALIGNMENT = FONT_ALIGNMENT_OPTIONS[0].value;
 const DEFAULT_VIEWPORT = VIEWPORT_OPTIONS[0].value;
+
+export const ToolbarSeparator = styled(Toolbar.Separator)`
+  background: ${({ theme }) => theme.colors.neutral150};
+  width: 1px;
+  height: 2.4rem;
+`;
 
 const SelectWrapper = styled(Box)`
   div[role='combobox'] {
@@ -52,15 +66,58 @@ const SelectWrapper = styled(Box)`
   }
 `;
 
+// Make the whole selector clickable
+const ColorSelectWrapper = styled(SelectWrapper)`
+  div[role='combobox'] {
+    pointer-events: all;
+    
+    > span:first-child {
+      cursor: pointer;
+      width: 100%;
+    }
+  }
+`;
+
+const ColorSwatch = styled.div<{ color: string }>`
+  width: 16px;
+  height: 16px;
+  background-color: ${props => props.color};
+  border: 1px solid white;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 8px;
+`;
+
+const SettingGroup = styled(Flex)`
+  align-items: center;
+  margin-bottom: 12px;
+  justify-content: flex-start;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const SettingIcon = styled(Box)`
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: ${({ theme }) => theme.colors.neutral600};
+`;
+
 const StyleToolbar = () => {
   const { editor, disabled } = useBlocksEditorContext('StyleToolbar');
   const [selectedNode, setSelectedNode] = useState<CustomElement | null>(null);
   const [currentPath, setCurrentPath] = useState<any[]>([]);
   const [fontFamily, setFontFamily] = useState<string | null>(null);
   const [fontColor, setFontColor] = useState<string | null>(null);
-  const [selectedViewport, setSelectedViewport] = useState<string>('desktop');
+  const [selectedViewport, setSelectedViewport] = useState<string>('mobile');
   const [fontSize, setFontSize] = useState<string | null>(null);
   const [fontLeading, setFontLeading] = useState<string | null>(null);
+  const [fontAlignment, setFontAlignment] = useState<string | null>(null);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // Get the currently selected node
   useEffect(() => {
@@ -84,22 +141,24 @@ const StyleToolbar = () => {
       setFontFamily(typedNode.fontFamily || DEFAULT_FONT_FAMILY);
       setFontColor(typedNode.fontColor || DEFAULT_FONT_COLOR);
       
-      // Find the current font size and leading for the selected viewport
+      // Find the current font size, leading, and alignment for the selected viewport
       if (typedNode.fontSettings) {
         const fontSetting = typedNode.fontSettings.find(
           (setting: FontSetting) => setting.breakpoint === selectedViewport
         );
         if (fontSetting) {
-          // Parse the fontSize to extract size and leading values
           setFontSize(fontSetting.fontSize || DEFAULT_FONT_SIZE);
           setFontLeading(fontSetting.fontLeading || DEFAULT_FONT_LEADING);
+          setFontAlignment(fontSetting.fontAlignment || DEFAULT_FONT_ALIGNMENT);
         } else {
           setFontSize(DEFAULT_FONT_SIZE);
           setFontLeading(DEFAULT_FONT_LEADING);
+          setFontAlignment(DEFAULT_FONT_ALIGNMENT);
         }
       } else {
         setFontSize(DEFAULT_FONT_SIZE);
         setFontLeading(DEFAULT_FONT_LEADING);
+        setFontAlignment(DEFAULT_FONT_ALIGNMENT);
       }
       
       // Apply defaults if this is the first time selecting this node
@@ -130,17 +189,20 @@ const StyleToolbar = () => {
         {
           breakpoint: 'mobile',
           fontSize: DEFAULT_FONT_SIZE, 
-          fontLeading: DEFAULT_FONT_LEADING
+          fontLeading: DEFAULT_FONT_LEADING,
+          fontAlignment: DEFAULT_FONT_ALIGNMENT
         },
         {
           breakpoint: 'tablet',
           fontSize: DEFAULT_FONT_SIZE,
-          fontLeading: DEFAULT_FONT_LEADING
+          fontLeading: DEFAULT_FONT_LEADING,
+          fontAlignment: DEFAULT_FONT_ALIGNMENT
         },
         {
           breakpoint: 'desktop',
           fontSize: DEFAULT_FONT_SIZE,
-          fontLeading: DEFAULT_FONT_LEADING
+          fontLeading: DEFAULT_FONT_LEADING,
+          fontAlignment: DEFAULT_FONT_ALIGNMENT
         }
       ];
     }
@@ -192,7 +254,7 @@ const StyleToolbar = () => {
     const stringValue = String(value);
     setSelectedViewport(stringValue);
     
-    // Update the font size to match the selected viewport
+    // Update the font settings to match the selected viewport
     if (selectedNode && selectedNode.fontSettings) {
       const fontSetting = selectedNode.fontSettings.find(
         (setting: FontSetting) => setting.breakpoint === stringValue
@@ -200,9 +262,11 @@ const StyleToolbar = () => {
       if (fontSetting) {
         setFontSize(fontSetting.fontSize || DEFAULT_FONT_SIZE);
         setFontLeading(fontSetting.fontLeading || DEFAULT_FONT_LEADING);
+        setFontAlignment(fontSetting.fontAlignment || DEFAULT_FONT_ALIGNMENT);
       } else {
         setFontSize(DEFAULT_FONT_SIZE);
         setFontLeading(DEFAULT_FONT_LEADING);
+        setFontAlignment(DEFAULT_FONT_ALIGNMENT);
       }
     }
     
@@ -236,7 +300,8 @@ const StyleToolbar = () => {
         newFontSettings.push({
           breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
           fontSize: stringValue,
-          fontLeading: fontLeading || DEFAULT_FONT_LEADING
+          fontLeading: fontLeading || DEFAULT_FONT_LEADING,
+          fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
         });
       }
     } else {
@@ -244,7 +309,8 @@ const StyleToolbar = () => {
       newFontSettings = [{
         breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
         fontSize: stringValue,
-        fontLeading: fontLeading || DEFAULT_FONT_LEADING
+        fontLeading: fontLeading || DEFAULT_FONT_LEADING,
+        fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
       }];
     }
     
@@ -285,7 +351,8 @@ const StyleToolbar = () => {
         newFontSettings.push({
           breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
           fontSize: fontSize || DEFAULT_FONT_SIZE,
-          fontLeading: stringValue
+          fontLeading: stringValue,
+          fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
         });
       }
     } else {
@@ -293,7 +360,8 @@ const StyleToolbar = () => {
       newFontSettings = [{
         breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
         fontSize: fontSize || DEFAULT_FONT_SIZE,
-        fontLeading: stringValue
+        fontLeading: stringValue,
+        fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
       }];
     }
     
@@ -307,101 +375,225 @@ const StyleToolbar = () => {
     ReactEditor.focus(editor as ReactEditor);
   };
 
+  // Handle font alignment change
+  const handleFontAlignmentChange = (value: string | number) => {
+    if (!selectedNode || !currentPath.length) return;
+    
+    const stringValue = String(value);
+    
+    // Create or update fontSettings for the current viewport
+    let newFontSettings: FontSetting[] = [];
+    
+    if (selectedNode.fontSettings) {
+      // Clone existing settings
+      newFontSettings = [...selectedNode.fontSettings];
+      
+      // Find and update the setting for the current viewport, or add a new one
+      const existingSettingIndex = newFontSettings.findIndex(
+        (setting: FontSetting) => setting.breakpoint === selectedViewport
+      );
+      
+      if (existingSettingIndex !== -1) {
+        newFontSettings[existingSettingIndex] = {
+          ...newFontSettings[existingSettingIndex],
+          fontAlignment: stringValue
+        };
+      } else {
+        newFontSettings.push({
+          breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
+          fontSize: fontSize || DEFAULT_FONT_SIZE,
+          fontLeading: fontLeading || DEFAULT_FONT_LEADING,
+          fontAlignment: stringValue
+        });
+      }
+    } else {
+      // Create new settings array with the current setting
+      newFontSettings = [{
+        breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
+        fontSize: fontSize || DEFAULT_FONT_SIZE,
+        fontLeading: fontLeading || DEFAULT_FONT_LEADING,
+        fontAlignment: stringValue
+      }];
+    }
+    
+    Transforms.setNodes(
+      editor,
+      { fontSettings: newFontSettings } as Partial<Node>,
+      { at: currentPath }
+    );
+    
+    setFontAlignment(stringValue);
+    ReactEditor.focus(editor as ReactEditor);
+  };
+
   if (!selectedNode) {
     return null;
   }
 
+  const showStyleOptions = !['image', 'code'].includes(selectedNode.type) || !selectedNode?.type;
+
   return (
-    <Flex gap={2}>
-      {/* Font Family Selector */}
-      <SelectWrapper>
-        <SingleSelect
-          placeholder="Font Family"
-          onChange={handleFontFamilyChange}
-          value={fontFamily || DEFAULT_FONT_FAMILY}
-          disabled={disabled}
-          aria-label="Select font family"
-        >
-          {FONT_FAMILY_OPTIONS.map((option) => (
-            <SingleSelectOption key={option.value} value={option.value}>
-              {option.label}
-            </SingleSelectOption>
-          ))}
-        </SingleSelect>
-      </SelectWrapper>
+    <>
+      <Flex gap={2}>
+        {/* Font Family Selector */}
+        {showStyleOptions && (
+          <SelectWrapper>
+            <SingleSelect
+              placeholder="Font Family"
+              onChange={handleFontFamilyChange}
+              value={fontFamily || DEFAULT_FONT_FAMILY}
+              disabled={disabled}
+              aria-label="Select font family"
+            >
+              {FONT_FAMILY_OPTIONS.map((option) => (
+                <SingleSelectOption key={option.value} value={option.value}>
+                  {option.label}
+                </SingleSelectOption>
+              ))}
+            </SingleSelect>
+          </SelectWrapper>
+        )}
 
-      {/* Font Color Selector */}
-      <SelectWrapper>
-        <SingleSelect
-          placeholder="Color"
-          onChange={handleFontColorChange}
-          value={fontColor || DEFAULT_FONT_COLOR}
-          disabled={disabled}
-          aria-label="Select font color"
-        >
-          {FONT_COLOR_OPTIONS.map((option) => (
-            <SingleSelectOption key={option.value} value={option.value}>
-              {option.label}
-            </SingleSelectOption>
-          ))}
-        </SingleSelect>
-      </SelectWrapper>
+        {/* Font Color Selector */}
+        {showStyleOptions && (
+          <ColorSelectWrapper>
+            <SingleSelect
+              placeholder="Color"
+              onChange={handleFontColorChange}
+              value={fontColor || DEFAULT_FONT_COLOR}
+              disabled={disabled}
+              aria-label="Select font color"
+            >
+              {FONT_COLOR_OPTIONS.map((option) => (
+                <SingleSelectOption key={option.value} value={option.value}>
+                  <Flex alignItems="center" pointerEvents="none">
+                    <ColorSwatch color={option.value} />
+                    <span>{option.label}</span>
+                  </Flex>
+                </SingleSelectOption>
+              ))}
+            </SingleSelect>
+          </ColorSelectWrapper>
+        )}
 
-      {/* Viewport Selector */}
-      <SelectWrapper>
-        <SingleSelect
-          placeholder="Viewport"
-          onChange={handleViewportChange}
-          value={selectedViewport || DEFAULT_VIEWPORT}
-          disabled={disabled}
-          aria-label="Select viewport"
-        >
-          {VIEWPORT_OPTIONS.map((option) => (
-            <SingleSelectOption key={option.value} value={option.value}>
-              {option.label}
-            </SingleSelectOption>
-          ))}
-        </SingleSelect>
-      </SelectWrapper>
+        {/* Advanced Settings Popover (Viewport, Font Size, Leading, Alignment) */}
+        {showStyleOptions && (
+          <Popover.Root open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <Popover.Trigger>
+              <IconButton label="Advanced text settings" variant='ghost'>
+                <Cog />
+              </IconButton>
+            </Popover.Trigger>
+            <Popover.Content style={{ minWidth: '180px', padding: '12px' }}>
+              <Flex direction="column" gap={2} alignItems="flex-start">
+                {/* Viewport Setting */}
+                <SettingGroup>
+                  <Tooltip label="Viewport">
+                    <SettingIcon>
+                      <FontViewportIcon />
+                    </SettingIcon>
+                  </Tooltip>
+                  <Box flex="1" style={{ width: '100%' }}>
+                    <SingleSelect
+                      placeholder="Viewport"
+                      onChange={handleViewportChange}
+                      value={selectedViewport || DEFAULT_VIEWPORT}
+                      disabled={disabled}
+                      aria-label="Select viewport"
+                      size="S"
+                    >
+                      {VIEWPORT_OPTIONS.map((option) => (
+                        <SingleSelectOption key={option.value} value={option.value}>
+                          {option.label}
+                        </SingleSelectOption>
+                      ))}
+                    </SingleSelect>
+                  </Box>
+                </SettingGroup>
 
-      {/* Font Size Selector - Only available for paragraph and heading blocks */}
-      {(selectedNode.type === 'heading' || selectedNode.type === 'paragraph') && (
-        <SelectWrapper>
-          <SingleSelect
-            placeholder="Font Size"
-            onChange={handleFontSizeChange}
-            value={fontSize || DEFAULT_FONT_SIZE}
-            disabled={disabled}
-            aria-label="Select font size"
-          >
-            {FONT_SIZE_OPTIONS.map((option) => (
-              <SingleSelectOption key={option.value} value={option.value}>
-                {option.label}
-              </SingleSelectOption>
-            ))}
-          </SingleSelect>
-        </SelectWrapper>
+                {/* Font Size Setting */}
+                <SettingGroup>
+                  <Tooltip label="Font Size">
+                    <SettingIcon>
+                      <FontSizeIcon />
+                    </SettingIcon>
+                  </Tooltip>
+                  <Box flex="1" style={{ width: '100%' }}>
+                    <SingleSelect
+                      placeholder="Font Size"
+                      onChange={handleFontSizeChange}
+                      value={fontSize || DEFAULT_FONT_SIZE}
+                      disabled={disabled}
+                      aria-label="Select font size"
+                      size="S"
+                    >
+                      {FONT_SIZE_OPTIONS.map((option) => (
+                        <SingleSelectOption key={option.value} value={option.value}>
+                          {option.label}
+                        </SingleSelectOption>
+                      ))}
+                    </SingleSelect>
+                  </Box>
+                </SettingGroup>
+
+                {/* Line Height Setting */}
+                <SettingGroup>
+                  <Tooltip label="Line Height">
+                    <SettingIcon>
+                      <FontLeadingIcon />
+                    </SettingIcon>
+                  </Tooltip>
+                  <Box flex="1" style={{ width: '100%' }}>
+                    <SingleSelect
+                      placeholder="Line Height"
+                      onChange={handleFontLeadingChange}
+                      value={fontLeading || DEFAULT_FONT_LEADING}
+                      disabled={disabled}
+                      aria-label="Select line height"
+                      size="S"
+                    >
+                      {FONT_LEADING_OPTIONS.map((option) => (
+                        <SingleSelectOption key={option.value} value={option.value}>
+                          {option.label}
+                        </SingleSelectOption>
+                      ))}
+                    </SingleSelect>
+                  </Box>
+                </SettingGroup>
+
+                {/* Text Alignment Setting */}
+                <SettingGroup>
+                  <Tooltip label="Text Alignment">
+                    <SettingIcon>
+                      <FontAlignmentIcon />
+                    </SettingIcon>
+                  </Tooltip>
+                  <Box flex="1" style={{ width: '100%' }}>
+                    <SingleSelect
+                      placeholder="Alignment"
+                      onChange={handleFontAlignmentChange}
+                      value={fontAlignment || DEFAULT_FONT_ALIGNMENT}
+                      disabled={disabled}
+                      aria-label="Select text alignment"
+                      size="S"
+                    >
+                      {FONT_ALIGNMENT_OPTIONS.map((option) => (
+                        <SingleSelectOption key={option.value} value={option.value}>
+                          {option.label}
+                        </SingleSelectOption>
+                      ))}
+                    </SingleSelect>
+                  </Box>
+                </SettingGroup>
+              </Flex>
+            </Popover.Content>
+          </Popover.Root>
+        )}
+      </Flex>
+      {showStyleOptions && (
+        <ToolbarSeparator />
       )}
-
-      {/* Font Leading Selector - Only available for paragraph and heading blocks */}
-      {(selectedNode.type === 'heading' || selectedNode.type === 'paragraph') && (
-        <SelectWrapper>
-          <SingleSelect
-            placeholder="Line Height"
-            onChange={handleFontLeadingChange}
-            value={fontLeading || DEFAULT_FONT_LEADING}
-            disabled={disabled}
-            aria-label="Select line height"
-          >
-            {FONT_LEADING_OPTIONS.map((option) => (
-              <SingleSelectOption key={option.value} value={option.value}>
-                {option.label}
-              </SingleSelectOption>
-            ))}
-          </SingleSelect>
-        </SelectWrapper>
-      )}
-    </Flex>
+    </>
   );
 };
 

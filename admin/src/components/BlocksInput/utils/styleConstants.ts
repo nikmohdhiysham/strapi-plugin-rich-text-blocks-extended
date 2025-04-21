@@ -146,6 +146,26 @@ export const FONT_LEADING_OPTIONS = [
   },
 ];
 
+// Font Alignment Options
+export const FONT_ALIGNMENT_OPTIONS = [
+  {
+    value: 'left',
+    label: 'Left',
+  },
+  {
+    value: 'center',
+    label: 'Center',
+  },
+  {
+    value: 'right',
+    label: 'Right',
+  },
+  {
+    value: 'justify',
+    label: 'Justify',
+  },
+];
+
 // Viewport Options
 export const VIEWPORT_OPTIONS = [
   {

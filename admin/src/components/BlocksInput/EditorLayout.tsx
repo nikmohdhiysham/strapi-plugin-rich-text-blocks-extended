@@ -102,7 +102,6 @@ const EditorLayout = ({
       style={{ overflowY: 'auto', overflowX: 'hidden' }}
       aria-describedby={ariaDescriptionId}
       position="relative"
-      contentEditable
     >
       {children}
     </InputWrapper>
