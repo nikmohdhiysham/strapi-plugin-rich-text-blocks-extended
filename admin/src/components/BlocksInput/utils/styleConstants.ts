@@ -17,120 +17,56 @@ export const FONT_FAMILY_OPTIONS = [
 // Font Color Options
 export const FONT_COLOR_OPTIONS = [
   {
-    value: 'white',
-    label: 'White',
-  },
-  {
-    value: 'sb-blue',
-    label: 'SB Blue',
-  },
-  {
-    value: 'sb-sand',
-    label: 'SB Sand',
-  },
-  {
-    value: 'pale-sand',
-    label: 'Pale Sand',
-  },
-  {
-    value: 'light-sand',
-    label: 'Light Sand',
-  },
-  {
-    value: 'midnight',
+    value: '#171725',
     label: 'Midnight',
   },
   {
-    value: 'ultramarine',
+    value: '#0057FF',
+    label: 'SB Blue',
+  },
+  {
+    value: '#F9F0D9',
+    label: 'SB Sand',
+  },
+  {
+    value: '#F5F0DF',
+    label: 'Pale Sand',
+  },
+  {
+    value: '#FFBEC',
+    label: 'Light Sand',
+  },
+  {
+    value: '#0E1A52',
     label: 'Ultramarine',
   },
   {
-    value: 'cobalt',
+    value: '#24368C',
     label: 'Cobalt',
   },
   {
-    value: 'sky',
+    value: '#99CEFA',
     label: 'Sky',
   },
   {
-    value: 'turquoise',
+    value: '#52E8DF',
     label: 'Turquoise',
   },
   {
-    value: 'mist',
+    value: '#CDFFFF',
     label: 'Mist',
   },
   {
-    value: 'field-blue',
+    value: '#E8F5FF',
     label: 'Field Blue',
   },
   {
-    value: 'cool-gray',
+    value: '#CDCDD0',
     label: 'Cool Gray',
   },
   {
-    value: 'cooler-gray',
+    value: '#929295',
     label: 'Cooler Gray',
-  },
-  {
-    value: 'lilac',
-    label: 'Lilac',
-  },
-  {
-    value: 'hearthstone',
-    label: 'Hearthstone',
-  },
-  {
-    value: 'pink-bloom',
-    label: 'Pink Bloom',
-  },
-  {
-    value: 'camel',
-    label: 'Camel',
-  },
-  {
-    value: 'trumpet-flower',
-    label: 'Trumpet Flower',
-  },
-  {
-    value: 'coral',
-    label: 'Coral',
-  },
-  {
-    value: 'cocopalm',
-    label: 'Cocopalm',
-  },
-  {
-    value: 'sunlit-leaf',
-    label: 'Sunlit Leaf',
-  },
-  {
-    value: 'emerald',
-    label: 'Emerald',
-  },
-  {
-    value: 'yam',
-    label: 'Yam',
-  },
-  {
-    value: 'forest',
-    label: 'Forest',
-  },
-  {
-    value: 'iron',
-    label: 'Iron',
-  },
-  {
-    value: 'hibiscus',
-    label: 'Hibiscus',
-  },
-  {
-    value: 'breadfruit',
-    label: 'Breadfruit',
-  },
-  {
-    value: 'pink-calypso',
-    label: 'Pink Calypso',
   },
 ];
 
