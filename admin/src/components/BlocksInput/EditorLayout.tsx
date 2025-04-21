@@ -96,12 +96,13 @@ const EditorLayout = ({
     <InputWrapper
       direction="column"
       alignItems="flex-start"
-      height="512px"
+      // height="512px"
       $disabled={disabled}
       $hasError={Boolean(error)}
-      style={{ overflow: 'hidden' }}
+      style={{ overflowY: 'auto', overflowX: 'hidden' }}
       aria-describedby={ariaDescriptionId}
       position="relative"
+      contentEditable
     >
       {children}
     </InputWrapper>
@@ -112,6 +113,7 @@ const InputWrapper = styled<FlexComponent>(Flex)<{ $disabled?: boolean; $hasErro
   border: 1px solid
     ${({ theme, $hasError }) => ($hasError ? theme.colors.danger600 : theme.colors.neutral200)};
   border-radius: ${({ theme }) => theme.borderRadius};
+  resize: vertical;
   background: ${({ theme }) => theme.colors.neutral0};
 
   ${({ theme, $hasError = false }) => css`
