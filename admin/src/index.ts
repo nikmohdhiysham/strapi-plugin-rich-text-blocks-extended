@@ -225,6 +225,11 @@ export default {
           }
         ],
         validator: (args: any) => {
+          const hasDuplicateLines = (lines: string[]) => {
+            const uniqueLines = new Set(lines);
+            return lines.length !== uniqueLines.size;
+          };
+
           const validateStringPreset = (value: string | undefined) => {
             if (!value) return true; // Allow empty values unless required
             
@@ -236,7 +241,17 @@ export default {
               return false;
             }
 
-            return lines.every(line => lineRegex.test(line));
+            // Check format of each line
+            if (!lines.every(line => lineRegex.test(line))) {
+              return false;
+            }
+
+            // Check for duplicate lines
+            if (hasDuplicateLines(lines)) {
+              return false;
+            }
+
+            return true;
           };
 
           const validateNumericPreset = (value: string | undefined, allowNegative: boolean = false) => {
@@ -250,12 +265,22 @@ export default {
               return false;
             }
 
-            return lines.every(line => numberRegex.test(line));
+            // Check format of each line
+            if (!lines.every(line => numberRegex.test(line))) {
+              return false;
+            }
+
+            // Check for duplicate lines
+            if (hasDuplicateLines(lines)) {
+              return false;
+            }
+
+            return true;
           };
 
           const errorMessages = {
-            badStringFormat: 'Each line must be in format "label:value" (no spaces allowed)',
-            badNumericFormat: 'Each line must be a valid number (no spaces allowed)',
+            badStringFormat: 'Each line must be in format "label:value" (no spaces or duplicate entries allowed)',
+            badNumericFormat: 'Each line must be a valid number (no spaces or duplicate entries allowed)',
           };
 
           return {
