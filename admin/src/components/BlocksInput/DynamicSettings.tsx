@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Box, Flex, SingleSelect, SingleSelectOption, Tooltip, Combobox, ComboboxOption } from '@strapi/design-system';
 import { styled } from 'styled-components';
-import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon } from './FontSettingsIcons';
+import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon, FontTrackingIcon } from './FontSettingsIcons';
 import { Option, FontSetting } from './utils/types';
 
 export interface DynamicSettingsProps {
   isActive: boolean;
   settings: FontSetting;
-  onSettingChange: (key: 'fontSize' | 'fontLeading' | 'fontAlignment', value: string | number, viewport: string) => void;
+  onSettingChange: (key: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking', value: string | number, viewport: string) => void;
   disabled?: boolean;
   fontSizeOptions: Option[];
   fontLeadingOptions: Option[];
+  fontTrackingOptions: Option[];
   fontAlignmentOptions: Option[];
 }
 
@@ -82,16 +83,20 @@ const DynamicSettings = ({
   disabled,
   fontSizeOptions: defaultFontSizeOptions,
   fontLeadingOptions: defaultFontLeadingOptions,
+  fontTrackingOptions: defaultFontTrackingOptions,
   fontAlignmentOptions,
 }: DynamicSettingsProps) => {
-  const { breakpoint, fontSize, fontLeading, fontAlignment } = settings;
+  const { breakpoint, fontSize, fontLeading, fontAlignment, fontTracking } = settings;
   const initialFontSizeOptions = getInitialOptions(fontSize, defaultFontSizeOptions);
   const initialFontLeadingOptions = getInitialOptions(fontLeading, defaultFontLeadingOptions);
+  const initialFontTrackingOptions = getInitialOptions(fontTracking, defaultFontTrackingOptions);
 
   const [isFontSizeValid, setIsFontSizeValid] = useState(true);
   const [fontSizeOptions, setFontSizeOptions] = useState(initialFontSizeOptions);
   const [isFontLeadingValid, setIsFontLeadingValid] = useState(true);
   const [fontLeadingOptions, setFontLeadingOptions] = useState(initialFontLeadingOptions);
+  const [isFontTrackingValid, setIsFontTrackingValid] = useState(true);
+  const [fontTrackingOptions, setFontTrackingOptions] = useState(initialFontTrackingOptions);
 
   const isValidNumber = (value: string, allowNegative: boolean = false) => {
     const regex = allowNegative ? /^-?\d*\.?\d+$/ : /^\d*\.?\d+$/;
@@ -163,6 +168,42 @@ const DynamicSettings = ({
             createMessage={isFontLeadingValid ? (value: string) => `Set "${value}"` : undefined}
           >
             {fontLeadingOptions.map(({ value, label }: Option) => (
+              <ComboboxOption key={value} value={value}>
+                {label}
+              </ComboboxOption>
+            ))}
+          </Combobox>
+        </SelectWrapper>
+      </SettingGroup>
+
+      {/* Letter Spacing Setting */}
+      <SettingGroup width="100%">
+        <Tooltip label="Letter Spacing">
+          <SettingIcon>
+            <FontTrackingIcon />
+          </SettingIcon>
+        </Tooltip>
+        <SelectWrapper flex="1">
+          <Combobox
+            autoComplete='off'
+            autocomplete={{ type: "none" }}
+            placeholder="Letter Spacing"
+            aria-label="Select or set letter spacing"
+            value={fontTracking || ''}
+            onChange={(value) => onSettingChange('fontTracking', value, breakpoint)}
+            creatable={isFontTrackingValid ? "visible" : false}
+            onTextValueChange={(value) => setIsFontTrackingValid(isValidNumber(value, true))}
+            onCreateOption={(value) => {
+              if (value) {
+                setFontTrackingOptions([{ value, label: value }, ...fontTrackingOptions]);
+              }
+            }}
+            size="S"
+            disabled={disabled}
+            clearLabel="Clear letter spacing"
+            createMessage={isFontTrackingValid ? (value: string) => `Set "${value}"` : undefined}
+          >
+            {fontTrackingOptions.map(({ value, label }: Option) => (
               <ComboboxOption key={value} value={value}>
                 {label}
               </ComboboxOption>

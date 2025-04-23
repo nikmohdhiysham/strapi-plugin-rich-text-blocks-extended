@@ -193,6 +193,35 @@ export default {
                   },
               },
               {
+                name: 'options.disableDefaultTracking',
+                type: 'checkbox',
+                defaultValue: true,
+                intlLabel: {
+                    id: `${PLUGIN_ID}.disableDefaultTracking`,
+                    defaultMessage: 'Disable default letter spacing?',
+                  },
+                  description: {
+                    id: `${PLUGIN_ID}.disableDefaultTracking.description`,
+                    defaultMessage: 'If enabled, custom letter spacing values will be used',
+                  },
+                },
+                {
+                  name: 'options.customTrackingPresets',
+                  type: 'textarea',
+                  placeholder: {
+                    id: `${PLUGIN_ID}.customTrackingPresets.placeholder`,
+                    defaultMessage: "-100\n-75\n-50\n-25\n-10\n-5\n0\n5\n10\n25\n50\n75\n100\n200",
+                  },
+                  intlLabel: {
+                    id: `${PLUGIN_ID}.customTrackingPresets`,
+                    defaultMessage: 'Custom letter spacing presets',
+                  },
+                  description: {
+                    id: `${PLUGIN_ID}.customTrackingPresets.description`,
+                    defaultMessage: 'These values will override default letter spacing options. One per line.',
+                  },
+              },
+              {
                 name: 'options.disableDefaultAlignments',
                 type: 'checkbox',
                 defaultValue: true,
@@ -304,6 +333,10 @@ export default {
               id: 'error.customLineHeightsPresets',
               defaultMessage: errorMessages.badNumericFormat,
             }, (value) => validateNumericPreset(value, false)),
+            customTrackingPresets: yup.string().test('customTrackingPresets', {
+              id: 'error.customTrackingPresets',
+              defaultMessage: errorMessages.badNumericFormat,
+            }, (value) => validateNumericPreset(value, true)),
             customAlignmentsPresets: yup.string().test('customAlignmentsPresets', {
               id: 'error.customAlignmentsPresets',
               defaultMessage: errorMessages.badStringFormat,

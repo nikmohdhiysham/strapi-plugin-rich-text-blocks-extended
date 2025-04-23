@@ -95,6 +95,25 @@ export const FONT_LEADING_OPTIONS: Option[] = [
   { label: '300', value: '300' },
 ];
 
+// Font Tracking Options
+export const FONT_TRACKING_OPTIONS: Option[] = [
+  { value: '-100', label: '-100' },
+  { value: '-75', label: '-75' },
+  { value: '-50', label: '-50' },
+  { value: '-25', label: '-25' },
+  { value: '-10', label: '-10' },
+  { value: '-5', label: '-5' },
+  { value: '0', label: '0', isDefault: true },
+  { value: '5', label: '5' },
+  { value: '10', label: '10' },
+  { value: '25', label: '25' },
+  { value: '50', label: '50' },
+  { value: '75', label: '75' },
+  { value: '100', label: '100' },
+  { value: '200', label: '200' },
+];
+
+
 // Font Alignment Options
 export const FONT_ALIGNMENT_OPTIONS: Option[] = [
   { label: 'Left', value: 'left' },
@@ -116,4 +135,5 @@ export const DEFAULT_FONT_COLOR = FONT_COLOR_OPTIONS[0].value;
 export const DEFAULT_FONT_SIZE = FONT_SIZE_OPTIONS[0].value;
 export const DEFAULT_FONT_LEADING = FONT_LEADING_OPTIONS[0].value;
 export const DEFAULT_FONT_ALIGNMENT = FONT_ALIGNMENT_OPTIONS[0].value;
+export const DEFAULT_FONT_TRACKING = FONT_TRACKING_OPTIONS[6].value;
 export const DEFAULT_VIEWPORT = VIEWPORT_OPTIONS[0].value; 

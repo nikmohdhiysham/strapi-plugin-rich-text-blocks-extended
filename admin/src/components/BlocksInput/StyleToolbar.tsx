@@ -32,12 +32,14 @@ import {
   FONT_COLOR_OPTIONS,
   FONT_SIZE_OPTIONS,
   FONT_LEADING_OPTIONS,
+  FONT_TRACKING_OPTIONS,
   FONT_ALIGNMENT_OPTIONS,
   VIEWPORT_OPTIONS,
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_COLOR,
   DEFAULT_FONT_SIZE,
   DEFAULT_FONT_LEADING,
+  DEFAULT_FONT_TRACKING,
   DEFAULT_FONT_ALIGNMENT,
   DEFAULT_VIEWPORT
 } from './utils/optionsDefaults';
@@ -184,6 +186,11 @@ const StyleToolbar = () => {
     typedPluginOptions?.customLineHeightsPresets,
     typedPluginOptions?.disableDefaultLineHeights
   );
+  const fontTrackingOptions = getOptionsWithFallback(
+    FONT_TRACKING_OPTIONS,
+    typedPluginOptions?.customTrackingPresets,
+    typedPluginOptions?.disableDefaultTracking
+  );
   const fontAlignmentOptions = getOptionsWithFallback(
     FONT_ALIGNMENT_OPTIONS,
     typedPluginOptions?.customAlignmentsPresets,
@@ -204,12 +211,13 @@ const StyleToolbar = () => {
   const defaultFontColor = getDefaultValue(fontColorOptions, DEFAULT_FONT_COLOR);
   const defaultFontSize = getDefaultValue(fontSizeOptions, DEFAULT_FONT_SIZE);
   const defaultFontLeading = getDefaultValue(fontLeadingOptions, DEFAULT_FONT_LEADING);
+  const defaultFontTracking = getDefaultValue(fontTrackingOptions, DEFAULT_FONT_TRACKING);
   const defaultFontAlignment = getDefaultValue(fontAlignmentOptions, DEFAULT_FONT_ALIGNMENT);
   const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
 
   // Reusable handler for updating viewport-specific settings
   const updateViewportSetting = (
-    settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment',
+    settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking',
     value: string | number,
     viewport: string
   ) => {
@@ -225,6 +233,7 @@ const StyleToolbar = () => {
           breakpoint: viewport as 'mobile' | 'tablet' | 'desktop',
           fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
           fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
+          fontTracking: viewport === viewportOptions[0].value ? defaultFontTracking : null,
           fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
         };
       }
@@ -305,6 +314,7 @@ const StyleToolbar = () => {
               breakpoint: setting.breakpoint,
               fontSize: setting.fontSize || null,
               fontLeading: setting.fontLeading || null,
+              fontTracking: setting.fontTracking || null,
               fontAlignment: setting.fontAlignment || null
             };
           });
@@ -317,6 +327,7 @@ const StyleToolbar = () => {
               breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
               fontSize: null,
               fontLeading: null,
+              fontTracking: null,
               fontAlignment: null
             };
           });
@@ -346,6 +357,7 @@ const StyleToolbar = () => {
         breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
         fontSize: index === 0 ? defaultFontSize : null,
         fontLeading: index === 0 ? defaultFontLeading : null,
+        fontTracking: index === 0 ? defaultFontTracking : null,
         fontAlignment: index === 0 ? defaultFontAlignment : null
       };
     });
@@ -461,6 +473,7 @@ const StyleToolbar = () => {
                   disabled={disabled}
                   fontSizeOptions={fontSizeOptions}
                   fontLeadingOptions={fontLeadingOptions}
+                  fontTrackingOptions={fontTrackingOptions}
                   fontAlignmentOptions={fontAlignmentOptions}
                 />
               ))}

@@ -12,6 +12,7 @@ export interface FontSetting {
   fontSize: string | null;
   fontLeading: string | null;
   fontAlignment: string | null;
+  fontTracking: string | null;
 }
 
 // Base element types
