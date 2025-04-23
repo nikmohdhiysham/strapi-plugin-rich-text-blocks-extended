@@ -1,18 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Flex, SingleSelect, SingleSelectOption, Tooltip, Combobox, ComboboxOption } from '@strapi/design-system';
 import { styled } from 'styled-components';
 import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon } from './FontSettingsIcons';
 import { Option, FontSetting } from './utils/types';
 
 export interface DynamicSettingsProps {
-  viewport: string | number;
-  settings: Record<string, FontSetting>;
+  isActive: boolean;
+  settings: FontSetting;
   onSettingChange: (key: 'fontSize' | 'fontLeading' | 'fontAlignment', value: string | number, viewport: string) => void;
   disabled?: boolean;
   fontSizeOptions: Option[];
   fontLeadingOptions: Option[];
   fontAlignmentOptions: Option[];
-  viewportOptions: Option[];
 }
 
 const SettingGroup = styled(Flex)`
@@ -70,111 +69,133 @@ const ViewportSettings = styled(Box)<{ isActive: boolean }>`
   display: ${({ isActive }) => isActive ? 'block' : 'none'};
 `;
 
+const getInitialOptions = (value: string | null, initialOptions: Option[]) : Option[] => {
+  if (!value || initialOptions.find((option) => option.value === value)) { return initialOptions }
+
+  return [{ value, label: value }, ...initialOptions];
+};
+
 const DynamicSettings = ({ 
-  viewport,
+  isActive,
   settings,
   onSettingChange, 
   disabled,
-  fontSizeOptions,
-  fontLeadingOptions,
+  fontSizeOptions: defaultFontSizeOptions,
+  fontLeadingOptions: defaultFontLeadingOptions,
   fontAlignmentOptions,
-  viewportOptions
 }: DynamicSettingsProps) => {
+  const { breakpoint, fontSize, fontLeading, fontAlignment } = settings;
+  const initialFontSizeOptions = getInitialOptions(fontSize, defaultFontSizeOptions);
+  const initialFontLeadingOptions = getInitialOptions(fontLeading, defaultFontLeadingOptions);
+
+  const [isFontSizeValid, setIsFontSizeValid] = useState(true);
+  const [fontSizeOptions, setFontSizeOptions] = useState(initialFontSizeOptions);
+  const [isFontLeadingValid, setIsFontLeadingValid] = useState(true);
+  const [fontLeadingOptions, setFontLeadingOptions] = useState(initialFontLeadingOptions);
+
+  const isValidNumber = (value: string, allowNegative: boolean = false) => {
+    const regex = allowNegative ? /^-?\d*\.?\d+$/ : /^\d*\.?\d+$/;
+    return !!value && regex.test(value) && (allowNegative ? true : Number(value) > 0);
+  };
+
   return (
-    <>
-      {viewportOptions.map((viewportOption) => {
-        const { breakpoint, fontSize, fontLeading, fontAlignment } = settings[viewportOption.value];
+    <ViewportSettings isActive={isActive}>
+      <SettingGroup width="100%">
+        <Tooltip label="Font Size">
+          <SettingIcon>
+            <FontSizeIcon />
+          </SettingIcon>
+        </Tooltip>
+        <SelectWrapper flex="1">
+          <Combobox
+            autoComplete='off'
+            autocomplete={{ type: "none" }}
+            placeholder="Font Size"
+            aria-label="Select or create font size"
+            value={fontSize || ''}
+            onChange={(value) => onSettingChange('fontSize', value, breakpoint)}
+            creatable={isFontSizeValid ? "visible" : false}
+            onTextValueChange={(value) => setIsFontSizeValid(isValidNumber(value))}
+            onCreateOption={(value) => {
+              if (value) {
+                setFontSizeOptions([{ value, label: value }, ...fontSizeOptions]);
+              }
+            }}
+            disabled={disabled}
+            size="S"
+            clearLabel="Clear font size"
+            createMessage={isFontSizeValid ? (value: string) => `Set "${value}"` : undefined}
+          >
+            {fontSizeOptions.map(({ value, label }: Option) => (
+              <ComboboxOption key={value} value={value}>
+                {label}
+              </ComboboxOption>
+            ))}
+          </Combobox>
+        </SelectWrapper>
+      </SettingGroup>
 
-        return (
-          <ViewportSettings key={viewportOption.value} isActive={viewport === viewportOption.value}>
-            {/* Font Size Setting */}
-            <SettingGroup width="100%">
-              <Tooltip label="Font Size">
-              <SettingIcon>
-                <FontSizeIcon />
-              </SettingIcon>
-            </Tooltip>
-            <SelectWrapper flex="1">
-              <Combobox
-                autoComplete='off'
-                autocomplete={{ type: "none" }}
-                placeholder="Font Size"
-                aria-label="Select or create font size"
-                value={fontSize || ''}
-                onChange={(value) => onSettingChange('fontSize', value, breakpoint)}
-                creatable="visible"
-                disabled={disabled}
-                size="S"
-                clearLabel="Clear font size"
-                createMessage={(value: string) => value ? `Set "${value}"` : ''}
-              >
-                {fontSizeOptions.map(({ value, label }: Option) => (
-                  <ComboboxOption key={value} value={value}>
-                    {label}
-                  </ComboboxOption>
-                ))}
-              </Combobox>
-            </SelectWrapper>
-          </SettingGroup>
+      {/* Line Height Setting */}
+      <SettingGroup width="100%">
+        <Tooltip label="Line Height">
+          <SettingIcon>
+            <FontLeadingIcon />
+          </SettingIcon>
+        </Tooltip>
+        <SelectWrapper flex="1">
+          <Combobox
+            autoComplete='off'
+            autocomplete={{ type: "none" }}
+            placeholder="Line Height"
+            aria-label="Select or set line height"
+            value={fontLeading || ''}
+            onChange={(value) => onSettingChange('fontLeading', value, breakpoint)}
+            creatable={isFontLeadingValid ? "visible" : false}
+            onTextValueChange={(value) => setIsFontLeadingValid(isValidNumber(value))}
+            onCreateOption={(value) => {
+              if (value) {
+                setFontLeadingOptions([{ value, label: value }, ...fontLeadingOptions]);
+              }
+            }}
+            size="S"
+            disabled={disabled}
+            clearLabel="Clear line height"
+            createMessage={isFontLeadingValid ? (value: string) => `Set "${value}"` : undefined}
+          >
+            {fontLeadingOptions.map(({ value, label }: Option) => (
+              <ComboboxOption key={value} value={value}>
+                {label}
+              </ComboboxOption>
+            ))}
+          </Combobox>
+        </SelectWrapper>
+      </SettingGroup>
 
-          {/* Line Height Setting */}
-          <SettingGroup width="100%">
-            <Tooltip label="Line Height">
-              <SettingIcon>
-                <FontLeadingIcon />
-              </SettingIcon>
-            </Tooltip>
-            <SelectWrapper flex="1">
-              <Combobox
-                autoComplete='off'
-                autocomplete={{ type: "none" }}
-                placeholder="Line Height"
-                aria-label="Select or set line height"
-                value={fontLeading || ''}
-                onChange={(value) => onSettingChange('fontLeading', value, breakpoint)}
-                creatable="visible"
-                size="S"
-                disabled={disabled}
-                clearLabel="Clear line height"
-                createMessage={(value: string) => value ? `Set "${value}"` : ''}
-              >
-                {fontLeadingOptions.map(({ value, label }: Option) => (
-                  <ComboboxOption key={value} value={value}>
-                    {label}
-                  </ComboboxOption>
-                ))}
-              </Combobox>
-            </SelectWrapper>
-          </SettingGroup>
-
-          {/* Text Alignment Setting */}
-          <SettingGroup width="100%">
-            <Tooltip label="Text Alignment">
-              <SettingIcon>
-                <FontAlignmentIcon />
-              </SettingIcon>
-            </Tooltip>
-            <SelectWrapper flex="1">
-              <SingleSelect
-                placeholder="Text Alignment"
-                onChange={(value) => onSettingChange('fontAlignment', value, breakpoint)}
-                value={fontAlignment || ''}
-                disabled={disabled}
-                aria-label="Select text alignment"
-                size="S"
-              >
-                {fontAlignmentOptions.map((option) => (
-                  <SingleSelectOption key={option.value} value={option.value}>
-                    {option.label}
-                  </SingleSelectOption>
-                ))}
-              </SingleSelect>
-            </SelectWrapper>
-            </SettingGroup>
-          </ViewportSettings>
-        );
-      })}
-    </>
+      {/* Text Alignment Setting */}
+      <SettingGroup width="100%">
+        <Tooltip label="Text Alignment">
+          <SettingIcon>
+            <FontAlignmentIcon />
+          </SettingIcon>
+        </Tooltip>
+        <SelectWrapper flex="1">
+          <SingleSelect
+            placeholder="Text Alignment"
+            onChange={(value) => onSettingChange('fontAlignment', value, breakpoint)}
+            value={fontAlignment || ''}
+            disabled={disabled}
+            aria-label="Select text alignment"
+            size="S"
+          >
+            {fontAlignmentOptions.map((option) => (
+              <SingleSelectOption key={option.value} value={option.value}>
+                {option.label}
+              </SingleSelectOption>
+            ))}
+          </SingleSelect>
+        </SelectWrapper>
+      </SettingGroup>
+    </ViewportSettings>
   );
 };
 

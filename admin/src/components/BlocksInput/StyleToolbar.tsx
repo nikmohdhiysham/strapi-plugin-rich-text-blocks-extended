@@ -1,9 +1,11 @@
 // REDUCE LAG WHEN TYPING - DONE, BUT STILL NEEDS TO BE IMPROVED
-// FIX DEFAULTS
-// ADD FONT TRACKING
+// FIX DEFAULTS - DONE
+// ADD FONT TRACKING - DONE
+// VALIDATE TYPED VALUES ARE NUMBERS - DONE
+// ADD NEW OPTION TO SETTINGS OPTIONS IF ENTERED BY USER - DONE
+
 // ADD UNITS FIELD IN PLUGIN CONFIG
-// VALIDATE TYPED VALUES ARE NUMBERS
-// ADD NEW OPTION TO SETTINGS OPTIONS IF ENTERED BY USER
+
 
 
 import React, { useState, useEffect } from 'react';
@@ -38,7 +40,7 @@ import {
   DEFAULT_FONT_LEADING,
   DEFAULT_FONT_ALIGNMENT,
   DEFAULT_VIEWPORT
-} from './utils/styleConstants';
+} from './utils/optionsDefaults';
 import { getOptionsWithFallback } from './utils/optionsParser';
 
 export const ToolbarSeparator = styled(Toolbar.Separator)`
@@ -188,13 +190,22 @@ const StyleToolbar = () => {
     typedPluginOptions?.disableDefaultAlignments
   );
 
+  const getDefaultValue = (options: any[], defaultValue: string) => {
+    const defaultOption = options.find(opt => opt.isDefault === true);
+
+    if (defaultOption) { return defaultOption.value }
+    if (options.length > 0) { return options[0].value }
+      
+    return defaultValue;
+  };
+
   // Get default values based on plugin configuration or fall back to system defaults
-  const defaultFontFamily = fontFamilyOptions.length > 0 ? fontFamilyOptions[0].value : DEFAULT_FONT_FAMILY;
-  const defaultFontColor = fontColorOptions.length > 0 ? fontColorOptions[0].value : DEFAULT_FONT_COLOR;
-  const defaultFontSize = fontSizeOptions.length > 0 ? fontSizeOptions[0].value : DEFAULT_FONT_SIZE;
-  const defaultFontLeading = fontLeadingOptions.length > 0 ? fontLeadingOptions[0].value : DEFAULT_FONT_LEADING;
-  const defaultFontAlignment = fontAlignmentOptions.length > 0 ? fontAlignmentOptions[0].value : DEFAULT_FONT_ALIGNMENT;
-  const defaultViewport = viewportOptions.length > 0 ? viewportOptions[0].value : DEFAULT_VIEWPORT;
+  const defaultFontFamily = getDefaultValue(fontFamilyOptions, DEFAULT_FONT_FAMILY);
+  const defaultFontColor = getDefaultValue(fontColorOptions, DEFAULT_FONT_COLOR);
+  const defaultFontSize = getDefaultValue(fontSizeOptions, DEFAULT_FONT_SIZE);
+  const defaultFontLeading = getDefaultValue(fontLeadingOptions, DEFAULT_FONT_LEADING);
+  const defaultFontAlignment = getDefaultValue(fontAlignmentOptions, DEFAULT_FONT_ALIGNMENT);
+  const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
 
   // Reusable handler for updating viewport-specific settings
   const updateViewportSetting = (
@@ -441,16 +452,18 @@ const StyleToolbar = () => {
                   </SelectWrapper>
                 </SettingGroup>
 
+              {Object.keys(viewportSettings).map((setting) => (
                 <DynamicSettings
-                  viewport={selectedViewport}
-                  settings={viewportSettings}
+                  key={`${setting}-settings`}
+                  isActive={selectedViewport === setting}
+                  settings={viewportSettings[setting]}
                   onSettingChange={updateViewportSetting}
                   disabled={disabled}
                   fontSizeOptions={fontSizeOptions}
                   fontLeadingOptions={fontLeadingOptions}
                   fontAlignmentOptions={fontAlignmentOptions}
-                  viewportOptions={viewportOptions}
                 />
+              ))}
               </Flex>
             </Popover.Content>
           </Popover.Root>

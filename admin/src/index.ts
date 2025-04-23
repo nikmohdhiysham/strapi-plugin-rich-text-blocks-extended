@@ -32,7 +32,7 @@ export default {
           {
             sectionTitle: {
               id: `${PLUGIN_ID}.section.basic-settings`,
-              defaultMessage: "Basic Settings",
+              defaultMessage: "Basic Settings (Label:Value)",
             },
             items:[
               {
@@ -53,7 +53,7 @@ export default {
                 type: 'textarea',
                 placeholder: {
                   id: `${PLUGIN_ID}.customFontsPresets.placeholder`,
-                  defaultMessage: "Arial:arial\nHelvetica:helvetica\nTimes New Roman:times-new-roman\nGeorgia:georgia",
+                  defaultMessage: "Arial:arial\nOpen Sans:open-sans\nTimes New Roman:times-new-roman\nGeorgia:georgia",
                 },
                 intlLabel: {
                   id: `${PLUGIN_ID}.customFontsPresets`,
@@ -82,7 +82,7 @@ export default {
                 type: 'textarea',
                 placeholder: {
                   id: `${PLUGIN_ID}.customColorsPresets.placeholder`,
-                  defaultMessage: "Black:#000000\nWhite:#FFFFFF\nRed:#FF0000\nGreen:#00FF00",
+                  defaultMessage: "Black:#000000\nWhite:#FFFFFF\nGray:#808080\nLight Gray:#D3D3D3\nDark Gray:#A9A9A9\nRed:#FF0000\nDark Pink:#FF1493\nPink:#FFC0CB\nLight Pink:#FFB6C1\nOrange:#FFA500\nDark Orange:#FF8C00\nLight Orange:#FFDAB9\nYellow:#FFFF00\nDark Yellow:#FFD700\nLight Yellow:#FFFFE0\nGreen:#00FF00\nDark Green:#006B3C\nLight Green:#90EE90\nBlue:#0000FF\nDark Blue:#000080\nLight Blue:#ADD8E6\nPurple:#800080\nDark Purple:#800080\nLight Purple:#E6E6FA\nBrown:#A52A2A\nDark Brown:#A52A2A\nLight Brown:#F5DEB3",
                 },
                 intlLabel: {
                   id: `${PLUGIN_ID}.customColorsPresets`,
@@ -100,7 +100,7 @@ export default {
           {
             sectionTitle: {
               id: `${PLUGIN_ID}.section.advanced-settings`,
-              defaultMessage: "Advanced Settings",
+              defaultMessage: "Advanced Settings (Label:Value)",
             },
             items: [
               {
@@ -150,7 +150,7 @@ export default {
                   type: 'textarea',
                   placeholder: {
                     id: `${PLUGIN_ID}.customSizesPresets.placeholder`,
-                    defaultMessage: "Small:12\nMedium:14\nLarge:16\nXLarge:18",
+                    defaultMessage: "6\n8\n9\n10\n11\n12\n14\n16\n18\n24\n30\n48\n60\n72\n150\n300",
                   },
                   intlLabel: {
                     id: `${PLUGIN_ID}.customSizesPresets`,
@@ -179,7 +179,7 @@ export default {
                   type: 'textarea',
                   placeholder: {
                     id: `${PLUGIN_ID}.customLineHeightsPresets.placeholder`,
-                    defaultMessage: "Small:40\nMedium:100\nLarge:110\nXLarge:120",
+                    defaultMessage: "6\n8\n9\n10\n11\n12\n14\n16\n18\n24\n30\n48\n60\n72\n150\n300",
                   },
                   intlLabel: {
                     id: `${PLUGIN_ID}.customLineHeightsPresets`,

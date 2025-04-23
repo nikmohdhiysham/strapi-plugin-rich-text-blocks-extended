@@ -4,6 +4,7 @@ import type { BaseElement, BaseText, Node, Descendant } from 'slate';
 export interface Option {
   label: string;
   value: string;
+  isDefault?: boolean;
 }
 
 export interface FontSetting {
