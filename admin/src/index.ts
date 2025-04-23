@@ -257,56 +257,33 @@ export default {
             disableDefaultAlignments = false,
           } = args[2].modifiedData.options || {};
 
-
           const hasDuplicateLines = (lines: string[]) => {
             const uniqueLines = new Set(lines);
             return lines.length !== uniqueLines.size;
           };
 
           const validateStringPreset = (value: string | undefined) => {
-            if (!value) return true; // Allow empty values unless required
+            if (!value) return true;
             
             const lines = value.split('\n');
             const lineRegex = /^[a-zA-Z]+(?:\s+[a-zA-Z]+)*:(?:[a-zA-Z][-a-zA-Z0-9]*|#[0-9A-Fa-f]+)$/;
             
-            // Reject if any line is empty or only whitespace
-            if (lines.some(line => !line || line.trim() === '')) {
-              return false;
-            }
-
-            // Check format of each line
-            if (!lines.every(line => lineRegex.test(line))) {
-              return false;
-            }
-
-            // Check for duplicate lines
-            if (hasDuplicateLines(lines)) {
-              return false;
-            }
+            if (lines.some(line => !line || line.trim() === '')) return false;
+            if (!lines.every(line => lineRegex.test(line))) return false;
+            if (hasDuplicateLines(lines)) return false;
 
             return true;
           };
 
           const validateNumericPreset = (value: string | undefined, allowNegative: boolean = false) => {
-            if (!value) return true; // Allow empty values unless required
+            if (!value) return true;
             
             const lines = value.split('\n');
             const numberRegex = allowNegative ? /^-?\d*\.?\d+$/ : /^\d*\.?\d+$/;
             
-            // Reject if any line is empty or only whitespace
-            if (lines.some(line => !line || line.trim() === '')) {
-              return false;
-            }
-
-            // Check format of each line
-            if (!lines.every(line => numberRegex.test(line))) {
-              return false;
-            }
-
-            // Check for duplicate lines
-            if (hasDuplicateLines(lines)) {
-              return false;
-            }
+            if (lines.some(line => !line || line.trim() === '')) return false;
+            if (!lines.every(line => numberRegex.test(line))) return false;
+            if (hasDuplicateLines(lines)) return false;
 
             return true;
           };
@@ -316,36 +293,33 @@ export default {
             badStringFormat: 'Each line must be in format "label:value" (no spaces or duplicates allowed)',
             badNumericFormat: 'Each line must be a valid number (no spaces or duplicates allowed)',
           };
-          
+
+          const createValidation = (
+            fieldName: string, 
+            isDisabled: boolean, 
+            isNumeric: boolean = false, 
+            allowNegative: boolean = false
+          ) => {
+            const baseSchema = isDisabled ? yup.string().required(errorMessages.required) : yup.string().optional();
+            const validator = isNumeric ? 
+              (value: string | undefined) => validateNumericPreset(value, allowNegative) : 
+              validateStringPreset;
+            const message = isNumeric ? errorMessages.badNumericFormat : errorMessages.badStringFormat;
+
+            return baseSchema.test(fieldName, {
+              id: `error.${fieldName}`,
+              defaultMessage: message,
+            }, validator);
+          };
+           
           return {
-            customFontsPresets: disableDefaultFonts ? yup.string().required(errorMessages.required).test('customFontsPresets', {
-              id: 'error.customFontsPresets',
-              defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset) : yup.string().optional(),
-            customColorsPresets: disableDefaultColors ? yup.string().required(errorMessages.required).test('customColorsPresets', {  
-              id: 'error.customColorsPresets',
-              defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset) : yup.string().optional(),
-            customViewportsPresets: disableDefaultViewports ? yup.string().required(errorMessages.required).test('customViewportsPresets', {
-              id: 'error.customViewportsPresets',
-              defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset) : yup.string().optional(),
-            customSizesPresets: disableDefaultSizes ? yup.string().required(errorMessages.required).test('customSizesPresets', {
-              id: 'error.customSizesPresets',
-              defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, false)) : yup.string().optional(),
-            customLineHeightsPresets: disableDefaultLineHeights ? yup.string().required(errorMessages.required).test('customLineHeightsPresets', {
-              id: 'error.customLineHeightsPresets',
-              defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, false)) : yup.string().optional(),
-            customTrackingPresets: disableDefaultTracking ? yup.string().required(errorMessages.required).test('customTrackingPresets', {
-              id: 'error.customTrackingPresets',
-              defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, true)) : yup.string().optional(),
-            customAlignmentsPresets: disableDefaultAlignments ? yup.string().required(errorMessages.required).test('customAlignmentsPresets', {
-              id: 'error.customAlignmentsPresets',
-              defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset) : yup.string().optional()  ,
+            customFontsPresets: createValidation('customFontsPresets', disableDefaultFonts),
+            customColorsPresets: createValidation('customColorsPresets', disableDefaultColors),
+            customViewportsPresets: createValidation('customViewportsPresets', disableDefaultViewports),
+            customSizesPresets: createValidation('customSizesPresets', disableDefaultSizes, true),
+            customLineHeightsPresets: createValidation('customLineHeightsPresets', disableDefaultLineHeights, true),
+            customTrackingPresets: createValidation('customTrackingPresets', disableDefaultTracking, true, true),
+            customAlignmentsPresets: createValidation('customAlignmentsPresets', disableDefaultAlignments),
           };
         },
       },

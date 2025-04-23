@@ -1,13 +1,3 @@
-// REDUCE LAG WHEN TYPING - DONE, BUT STILL NEEDS TO BE IMPROVED
-// FIX DEFAULTS - DONE
-// ADD FONT TRACKING - DONE
-// VALIDATE TYPED VALUES ARE NUMBERS - DONE
-// ADD NEW OPTION TO SETTINGS OPTIONS IF ENTERED BY USER - DONE
-
-// ADD UNITS FIELD IN PLUGIN CONFIG
-
-
-
 import React, { useState, useEffect } from 'react';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import {
