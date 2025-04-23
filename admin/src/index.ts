@@ -40,7 +40,6 @@ export default {
               {
                 name: 'options.disableDefaultFonts',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                   id: `${PLUGIN_ID}.disableDefaultFonts`,
                   defaultMessage: 'Disable default fonts?',
@@ -69,7 +68,6 @@ export default {
               {
                 name: 'options.disableDefaultColors',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                   id: `${PLUGIN_ID}.disableDefaultColors`,
                   defaultMessage: 'Disable default colors?',
@@ -108,7 +106,6 @@ export default {
               {
                 name: 'options.disableDefaultViewports',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                     id: `${PLUGIN_ID}.disableDefaultViewports`,
                     defaultMessage: 'Disable default viewports?',
@@ -137,7 +134,6 @@ export default {
               {
                 name: 'options.disableDefaultSizes',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                     id: `${PLUGIN_ID}.disableDefaultSizes`,
                     defaultMessage: 'Disable default sizes?',
@@ -166,7 +162,6 @@ export default {
               {
                 name: 'options.disableDefaultLineHeights',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                     id: `${PLUGIN_ID}.disableDefaultLineHeights`,
                     defaultMessage: 'Disable default line heights?',
@@ -195,7 +190,6 @@ export default {
               {
                 name: 'options.disableDefaultTracking',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                     id: `${PLUGIN_ID}.disableDefaultTracking`,
                     defaultMessage: 'Disable default letter spacing?',
@@ -224,7 +218,6 @@ export default {
               {
                 name: 'options.disableDefaultAlignments',
                 type: 'checkbox',
-                defaultValue: true,
                 intlLabel: {
                     id: `${PLUGIN_ID}.disableDefaultAlignments`,
                     defaultMessage: 'Disable default alignments?',
@@ -253,7 +246,18 @@ export default {
             ]
           }
         ],
-        validator: (args: any) => {
+        validator: (args: any) => {  
+          const { 
+            disableDefaultFonts = false, 
+            disableDefaultColors = false,
+            disableDefaultViewports = false, 
+            disableDefaultSizes = false, 
+            disableDefaultLineHeights = false, 
+            disableDefaultTracking = false, 
+            disableDefaultAlignments = false,
+          } = args[2].modifiedData.options || {};
+
+
           const hasDuplicateLines = (lines: string[]) => {
             const uniqueLines = new Set(lines);
             return lines.length !== uniqueLines.size;
@@ -308,39 +312,40 @@ export default {
           };
 
           const errorMessages = {
-            badStringFormat: 'Each line must be in format "label:value" (no spaces or duplicate entries allowed)',
-            badNumericFormat: 'Each line must be a valid number (no spaces or duplicate entries allowed)',
+            required: 'This field is required',
+            badStringFormat: 'Each line must be in format "label:value" (no spaces or duplicates allowed)',
+            badNumericFormat: 'Each line must be a valid number (no spaces or duplicates allowed)',
           };
-
+          
           return {
-            customFontsPresets: yup.string().test('customFontsPresets', {
+            customFontsPresets: disableDefaultFonts ? yup.string().required(errorMessages.required).test('customFontsPresets', {
               id: 'error.customFontsPresets',
               defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset),
-            customColorsPresets: yup.string().test('customColorsPresets', {
+            }, validateStringPreset) : yup.string().optional(),
+            customColorsPresets: disableDefaultColors ? yup.string().required(errorMessages.required).test('customColorsPresets', {  
               id: 'error.customColorsPresets',
               defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset),
-            customViewportsPresets: yup.string().test('customViewportsPresets', {
+            }, validateStringPreset) : yup.string().optional(),
+            customViewportsPresets: disableDefaultViewports ? yup.string().required(errorMessages.required).test('customViewportsPresets', {
               id: 'error.customViewportsPresets',
               defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset),
-            customSizesPresets: yup.string().test('customSizesPresets', {
+            }, validateStringPreset) : yup.string().optional(),
+            customSizesPresets: disableDefaultSizes ? yup.string().required(errorMessages.required).test('customSizesPresets', {
               id: 'error.customSizesPresets',
               defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, false)),
-            customLineHeightsPresets: yup.string().test('customLineHeightsPresets', {
+            }, (value) => validateNumericPreset(value, false)) : yup.string().optional(),
+            customLineHeightsPresets: disableDefaultLineHeights ? yup.string().required(errorMessages.required).test('customLineHeightsPresets', {
               id: 'error.customLineHeightsPresets',
               defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, false)),
-            customTrackingPresets: yup.string().test('customTrackingPresets', {
+            }, (value) => validateNumericPreset(value, false)) : yup.string().optional(),
+            customTrackingPresets: disableDefaultTracking ? yup.string().required(errorMessages.required).test('customTrackingPresets', {
               id: 'error.customTrackingPresets',
               defaultMessage: errorMessages.badNumericFormat,
-            }, (value) => validateNumericPreset(value, true)),
-            customAlignmentsPresets: yup.string().test('customAlignmentsPresets', {
+            }, (value) => validateNumericPreset(value, true)) : yup.string().optional(),
+            customAlignmentsPresets: disableDefaultAlignments ? yup.string().required(errorMessages.required).test('customAlignmentsPresets', {
               id: 'error.customAlignmentsPresets',
               defaultMessage: errorMessages.badStringFormat,
-            }, validateStringPreset),
+            }, validateStringPreset) : yup.string().optional()  ,
           };
         },
       },
