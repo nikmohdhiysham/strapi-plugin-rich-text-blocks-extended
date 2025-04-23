@@ -1,6 +1,7 @@
 import { PLUGIN_ID } from './pluginId';
 import { Initializer } from './components/Initializer';
 import {PluginIcon} from './components/PluginIcon';
+import * as yup from 'yup';
 
 export default {
   register(app: any) {
@@ -16,6 +17,7 @@ export default {
       pluginId: PLUGIN_ID,
       type: 'json',
       icon: PluginIcon,
+      required: true,
       intlLabel: {
         id: `${PLUGIN_ID}.field.label`,
         defaultMessage: 'Rich Text Blocks (Extended)',
@@ -222,6 +224,67 @@ export default {
             ]
           }
         ],
+        validator: (args: any) => {
+          const validateStringPreset = (value: string | undefined) => {
+            if (!value) return true; // Allow empty values unless required
+            
+            const lines = value.split('\n');
+            const lineRegex = /^[a-zA-Z]+(?:\s+[a-zA-Z]+)*:(?:[a-zA-Z][-a-zA-Z0-9]*|#[0-9A-Fa-f]+)$/;
+            
+            // Reject if any line is empty or only whitespace
+            if (lines.some(line => !line || line.trim() === '')) {
+              return false;
+            }
+
+            return lines.every(line => lineRegex.test(line));
+          };
+
+          const validateNumericPreset = (value: string | undefined, allowNegative: boolean = false) => {
+            if (!value) return true; // Allow empty values unless required
+            
+            const lines = value.split('\n');
+            const numberRegex = allowNegative ? /^-?\d*\.?\d+$/ : /^\d*\.?\d+$/;
+            
+            // Reject if any line is empty or only whitespace
+            if (lines.some(line => !line || line.trim() === '')) {
+              return false;
+            }
+
+            return lines.every(line => numberRegex.test(line));
+          };
+
+          const errorMessages = {
+            badStringFormat: 'Each line must be in format "label:value" (no spaces allowed)',
+            badNumericFormat: 'Each line must be a valid number (no spaces allowed)',
+          };
+
+          return {
+            customFontsPresets: yup.string().test('customFontsPresets', {
+              id: 'error.customFontsPresets',
+              defaultMessage: errorMessages.badStringFormat,
+            }, validateStringPreset),
+            customColorsPresets: yup.string().test('customColorsPresets', {
+              id: 'error.customColorsPresets',
+              defaultMessage: errorMessages.badStringFormat,
+            }, validateStringPreset),
+            customViewportsPresets: yup.string().test('customViewportsPresets', {
+              id: 'error.customViewportsPresets',
+              defaultMessage: errorMessages.badStringFormat,
+            }, validateStringPreset),
+            customSizesPresets: yup.string().test('customSizesPresets', {
+              id: 'error.customSizesPresets',
+              defaultMessage: errorMessages.badNumericFormat,
+            }, (value) => validateNumericPreset(value, false)),
+            customLineHeightsPresets: yup.string().test('customLineHeightsPresets', {
+              id: 'error.customLineHeightsPresets',
+              defaultMessage: errorMessages.badNumericFormat,
+            }, (value) => validateNumericPreset(value, false)),
+            customAlignmentsPresets: yup.string().test('customAlignmentsPresets', {
+              id: 'error.customAlignmentsPresets',
+              defaultMessage: errorMessages.badStringFormat,
+            }, validateStringPreset),
+          };
+        },
       },
     });
   },
