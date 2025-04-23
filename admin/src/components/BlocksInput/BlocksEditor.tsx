@@ -88,6 +88,7 @@ interface BlocksEditorContextValue {
   name: string;
   setLiveText: (text: string) => void;
   isExpandedMode: boolean;
+  pluginOptions?: Record<string, any>;
 }
 
 interface BlocksEditorProviderProps {
@@ -98,6 +99,7 @@ interface BlocksEditorProviderProps {
   name: string;
   setLiveText: (text: string) => void;
   isExpandedMode: boolean;
+  pluginOptions?: Record<string, any>;
 }
 
 const [_BlocksEditorProvider, usePartialBlocksEditorContext] =
@@ -176,10 +178,11 @@ interface BlocksEditorProps
     BlocksContentProps {
   disabled?: boolean;
   name: string;
+  pluginOptions?: Record<string, any>;
 }
 
 const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
-  ({ disabled = false, name, onChange, value, error, ...contentProps }, forwardedRef) => {
+  ({ disabled = false, name, onChange, value, error, pluginOptions, ...contentProps }, forwardedRef) => {
     const { formatMessage } = useIntl();
     const [editor] = React.useState(() =>
       pipe(withHistory, withImages, withStrapiSchema, withReact, withLinks)(createEditor())
@@ -251,6 +254,7 @@ const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
             name={name}
             setLiveText={setLiveText}
             isExpandedMode={isExpandedMode}
+            pluginOptions={pluginOptions}
           >
             <EditorLayout
               error={error}

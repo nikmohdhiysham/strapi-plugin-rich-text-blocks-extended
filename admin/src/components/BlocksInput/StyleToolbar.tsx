@@ -1,3 +1,11 @@
+// REDUCE LAG WHEN TYPING - DONE, BUT STILL NEEDS TO BE IMPROVED
+// FIX DEFAULTS
+// ADD FONT TRACKING
+// ADD UNITS FIELD IN PLUGIN CONFIG
+// VALIDATE TYPED VALUES ARE NUMBERS
+// ADD NEW OPTION TO SETTINGS OPTIONS IF ENTERED BY USER
+
+
 import React, { useState, useEffect } from 'react';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import {
@@ -7,34 +15,31 @@ import {
   SingleSelectOption,
   Popover,
   IconButton,
-  Tooltip
+  Tooltip,
 } from '@strapi/design-system';
-import { Editor, Transforms, Node } from 'slate';
-import { ReactEditor } from 'slate-react';
+import { Editor, Transforms, Node, Element } from 'slate';
 import { styled } from 'styled-components';
 import { Cog } from '@strapi/icons';
 
-// Import icon components from FontSettingsIcons
-import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon, FontViewportIcon } from './FontSettingsIcons';
-
+import { FontViewportIcon } from './FontSettingsIcons';
 import { useBlocksEditorContext } from './BlocksEditor';
-import { FontSetting, CustomElement } from './utils/types';
+import { CustomElement, FontSetting } from './utils/types';
+import DynamicSettings from './DynamicSettings';
 import {
   FONT_FAMILY_OPTIONS,
   FONT_COLOR_OPTIONS,
   FONT_SIZE_OPTIONS,
   FONT_LEADING_OPTIONS,
   FONT_ALIGNMENT_OPTIONS,
-  VIEWPORT_OPTIONS
+  VIEWPORT_OPTIONS,
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_FONT_COLOR,
+  DEFAULT_FONT_SIZE,
+  DEFAULT_FONT_LEADING,
+  DEFAULT_FONT_ALIGNMENT,
+  DEFAULT_VIEWPORT
 } from './utils/styleConstants';
-
-// Get default values (first item in each options array)
-const DEFAULT_FONT_FAMILY = FONT_FAMILY_OPTIONS[0].value;
-const DEFAULT_FONT_COLOR = FONT_COLOR_OPTIONS[0].value;
-const DEFAULT_FONT_SIZE = FONT_SIZE_OPTIONS[0].value;
-const DEFAULT_FONT_LEADING = FONT_LEADING_OPTIONS[0].value;
-const DEFAULT_FONT_ALIGNMENT = FONT_ALIGNMENT_OPTIONS[0].value;
-const DEFAULT_VIEWPORT = VIEWPORT_OPTIONS[0].value;
+import { getOptionsWithFallback } from './utils/optionsParser';
 
 export const ToolbarSeparator = styled(Toolbar.Separator)`
   background: ${({ theme }) => theme.colors.neutral150};
@@ -44,7 +49,6 @@ export const ToolbarSeparator = styled(Toolbar.Separator)`
 
 const SelectWrapper = styled(Box)`
   div[role='combobox'] {
-    border: none;
     cursor: pointer;
     min-height: unset;
     padding-top: 6px;
@@ -64,11 +68,20 @@ const SelectWrapper = styled(Box)`
       }
     }
   }
+
+  // Only remove borders when not inside a popover
+  ${({ theme }) => `
+    &:not([role="dialog"] *) {
+      div[role='combobox'] {
+        border: none;
+      }
+    }
+  `}
 `;
 
-// Make the whole selector clickable
 const ColorSelectWrapper = styled(SelectWrapper)`
   div[role='combobox'] {
+    border: none;
     pointer-events: all;
     
     > span:first-child {
@@ -107,114 +120,118 @@ const SettingIcon = styled(Box)`
   color: ${({ theme }) => theme.colors.neutral600};
 `;
 
+interface PluginOptions {
+  disableDefaultFonts?: boolean;
+  disableDefaultSizes?: boolean;
+  disableDefaultLineHeights?: boolean;
+  disableDefaultAlignments?: boolean;
+  disableDefaultViewports?: boolean;
+  disableDefaultColors?: boolean;
+  customFontsPresets?: string;
+  customColorsPresets?: string;
+  customViewportsPresets?: string;
+  customAlignmentsPresets?: string;
+  customLineHeightsPresets?: string;
+  customSizesPresets?: string;
+  [key: string]: any;
+}
+
+// Type guard to check if a node is a CustomElement
+const isCustomElement = (node: unknown): node is CustomElement => {
+  return Element.isElement(node) && 
+         'type' in node && 
+         typeof (node as any).type === 'string';
+};
+
 const StyleToolbar = () => {
-  const { editor, disabled } = useBlocksEditorContext('StyleToolbar');
+  const { editor, disabled, pluginOptions = {} } = useBlocksEditorContext('StyleToolbar');
   const [selectedNode, setSelectedNode] = useState<CustomElement | null>(null);
   const [currentPath, setCurrentPath] = useState<any[]>([]);
   const [fontFamily, setFontFamily] = useState<string | null>(null);
   const [fontColor, setFontColor] = useState<string | null>(null);
-  const [selectedViewport, setSelectedViewport] = useState<string>('mobile');
-  const [fontSize, setFontSize] = useState<string | null>(null);
-  const [fontLeading, setFontLeading] = useState<string | null>(null);
-  const [fontAlignment, setFontAlignment] = useState<string | null>(null);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [selectedViewport, setSelectedViewport] = useState<string | number>('mobile');
+  const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
 
-  // Get the currently selected node
-  useEffect(() => {
-    if (!editor.selection) {
-      setSelectedNode(null);
-      return;
-    }
+  // Track if a node has been initialized
+  const [initializedNodes] = useState(new Set<string>());
 
-    const entry = Editor.above(editor, {
-      match: (n) => !Editor.isEditor(n) && 'type' in n,
-    });
+  // Get styling options based on plugin configuration
+  const typedPluginOptions = pluginOptions as PluginOptions;
+  const fontFamilyOptions = getOptionsWithFallback(
+    FONT_FAMILY_OPTIONS,
+    typedPluginOptions?.customFontsPresets,
+    typedPluginOptions?.disableDefaultFonts
+  );
+  const fontColorOptions = getOptionsWithFallback(
+    FONT_COLOR_OPTIONS,
+    typedPluginOptions?.customColorsPresets,
+    typedPluginOptions?.disableDefaultColors
+  );
+  const viewportOptions = getOptionsWithFallback(
+    VIEWPORT_OPTIONS,
+    typedPluginOptions?.customViewportsPresets,
+    typedPluginOptions?.disableDefaultViewports
+  );
+  const fontSizeOptions = getOptionsWithFallback(
+    FONT_SIZE_OPTIONS,
+    typedPluginOptions?.customSizesPresets,
+    typedPluginOptions?.disableDefaultSizes
+  );
+  const fontLeadingOptions = getOptionsWithFallback(
+    FONT_LEADING_OPTIONS,
+    typedPluginOptions?.customLineHeightsPresets,
+    typedPluginOptions?.disableDefaultLineHeights
+  );
+  const fontAlignmentOptions = getOptionsWithFallback(
+    FONT_ALIGNMENT_OPTIONS,
+    typedPluginOptions?.customAlignmentsPresets,
+    typedPluginOptions?.disableDefaultAlignments
+  );
 
-    if (entry) {
-      const [node, path] = entry;
-      const typedNode = node as CustomElement;
-      
-      setSelectedNode(typedNode);
-      setCurrentPath(path);
-      
-      // Set values based on the selected node or use defaults
-      setFontFamily(typedNode.fontFamily || DEFAULT_FONT_FAMILY);
-      setFontColor(typedNode.fontColor || DEFAULT_FONT_COLOR);
-      
-      // Find the current font size, leading, and alignment for the selected viewport
-      if (typedNode.fontSettings) {
-        const fontSetting = typedNode.fontSettings.find(
-          (setting: FontSetting) => setting.breakpoint === selectedViewport
-        );
-        if (fontSetting) {
-          setFontSize(fontSetting.fontSize || DEFAULT_FONT_SIZE);
-          setFontLeading(fontSetting.fontLeading || DEFAULT_FONT_LEADING);
-          setFontAlignment(fontSetting.fontAlignment || DEFAULT_FONT_ALIGNMENT);
-        } else {
-          setFontSize(DEFAULT_FONT_SIZE);
-          setFontLeading(DEFAULT_FONT_LEADING);
-          setFontAlignment(DEFAULT_FONT_ALIGNMENT);
-        }
-      } else {
-        setFontSize(DEFAULT_FONT_SIZE);
-        setFontLeading(DEFAULT_FONT_LEADING);
-        setFontAlignment(DEFAULT_FONT_ALIGNMENT);
+  // Get default values based on plugin configuration or fall back to system defaults
+  const defaultFontFamily = fontFamilyOptions.length > 0 ? fontFamilyOptions[0].value : DEFAULT_FONT_FAMILY;
+  const defaultFontColor = fontColorOptions.length > 0 ? fontColorOptions[0].value : DEFAULT_FONT_COLOR;
+  const defaultFontSize = fontSizeOptions.length > 0 ? fontSizeOptions[0].value : DEFAULT_FONT_SIZE;
+  const defaultFontLeading = fontLeadingOptions.length > 0 ? fontLeadingOptions[0].value : DEFAULT_FONT_LEADING;
+  const defaultFontAlignment = fontAlignmentOptions.length > 0 ? fontAlignmentOptions[0].value : DEFAULT_FONT_ALIGNMENT;
+  const defaultViewport = viewportOptions.length > 0 ? viewportOptions[0].value : DEFAULT_VIEWPORT;
+
+  // Reusable handler for updating viewport-specific settings
+  const updateViewportSetting = (
+    settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment',
+    value: string | number,
+    viewport: string
+  ) => {
+    if (!selectedNode || !currentPath.length) return;
+    
+    const stringValue = String(value);
+    
+    // Update the viewportSettings state
+    setViewportSettings(prev => {
+      const newSettings = { ...prev };
+      if (!newSettings[viewport]) {
+        newSettings[viewport] = {
+          breakpoint: viewport as 'mobile' | 'tablet' | 'desktop',
+          fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
+          fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
+          fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
+        };
       }
-      
-      // Apply defaults if this is the first time selecting this node
-      if (!typedNode.fontFamily || !typedNode.fontColor || !typedNode.fontSettings) {
-        applyDefaultStyles(typedNode, path);
-      }
-    } else {
-      setSelectedNode(null);
-    }
-  }, [editor.selection, selectedViewport, editor]);
-  
-  // Apply default styles to a node if it doesn't have them already
-  const applyDefaultStyles = (node: CustomElement, path: any[]) => {
-    // Build the changes object based on what's missing
-    const changes: Partial<CustomElement> = {};
-    
-    if (!node.fontFamily) {
-      changes.fontFamily = DEFAULT_FONT_FAMILY;
-    }
-    
-    if (!node.fontColor) {
-      changes.fontColor = DEFAULT_FONT_COLOR;
-    }
-    
-    // Create default font settings if missing
-    if (!node.fontSettings || node.fontSettings.length === 0) {
-      changes.fontSettings = [
-        {
-          breakpoint: 'mobile',
-          fontSize: DEFAULT_FONT_SIZE, 
-          fontLeading: DEFAULT_FONT_LEADING,
-          fontAlignment: DEFAULT_FONT_ALIGNMENT
-        },
-        {
-          breakpoint: 'tablet',
-          fontSize: DEFAULT_FONT_SIZE,
-          fontLeading: DEFAULT_FONT_LEADING,
-          fontAlignment: DEFAULT_FONT_ALIGNMENT
-        },
-        {
-          breakpoint: 'desktop',
-          fontSize: DEFAULT_FONT_SIZE,
-          fontLeading: DEFAULT_FONT_LEADING,
-          fontAlignment: DEFAULT_FONT_ALIGNMENT
-        }
-      ];
-    }
-    
-    // Only apply changes if there are any
-    if (Object.keys(changes).length > 0) {
+      newSettings[viewport] = {
+        ...newSettings[viewport],
+        [settingKey]: stringValue
+      };
+
+      // Update the node with all viewport settings
+      const allSettings = Object.values(newSettings);
       Transforms.setNodes(
         editor,
-        changes as Partial<Node>,
-        { at: path }
+        { fontSettings: allSettings } as Partial<Node>,
+        { at: currentPath }
       );
-    }
+      
+      return newSettings;
+    });
   };
 
   // Handle font family change
@@ -230,7 +247,6 @@ const StyleToolbar = () => {
     );
     
     setFontFamily(stringValue);
-    ReactEditor.focus(editor as ReactEditor);
   };
 
   // Handle font color change
@@ -243,188 +259,102 @@ const StyleToolbar = () => {
       editor,
       { fontColor: stringValue } as Partial<Node>,
       { at: currentPath }
-    );
+    );  
     
     setFontColor(stringValue);
-    ReactEditor.focus(editor as ReactEditor);
   };
 
-  // Handle viewport change
-  const handleViewportChange = (value: string | number) => {
-    const stringValue = String(value);
-    setSelectedViewport(stringValue);
-    
-    // Update the font settings to match the selected viewport
-    if (selectedNode && selectedNode.fontSettings) {
-      const fontSetting = selectedNode.fontSettings.find(
-        (setting: FontSetting) => setting.breakpoint === stringValue
-      );
-      if (fontSetting) {
-        setFontSize(fontSetting.fontSize || DEFAULT_FONT_SIZE);
-        setFontLeading(fontSetting.fontLeading || DEFAULT_FONT_LEADING);
-        setFontAlignment(fontSetting.fontAlignment || DEFAULT_FONT_ALIGNMENT);
-      } else {
-        setFontSize(DEFAULT_FONT_SIZE);
-        setFontLeading(DEFAULT_FONT_LEADING);
-        setFontAlignment(DEFAULT_FONT_ALIGNMENT);
-      }
+  // Effect for handling selection changes - keep this light
+  useEffect(() => {
+    if (!editor.selection) {
+      setSelectedNode(null);
+      setViewportSettings({});
+      setFontFamily(null);
+      setFontColor(null);
+      return;
     }
-    
-    ReactEditor.focus(editor as ReactEditor);
-  };
 
-  // Handle font size change
-  const handleFontSizeChange = (value: string | number) => {
-    if (!selectedNode || !currentPath.length) return;
-    
-    const stringValue = String(value);
-    
-    // Create or update fontSettings for the current viewport
-    let newFontSettings: FontSetting[] = [];
-    
-    if (selectedNode.fontSettings) {
-      // Clone existing settings
-      newFontSettings = [...selectedNode.fontSettings];
-      
-      // Find and update the setting for the current viewport, or add a new one
-      const existingSettingIndex = newFontSettings.findIndex(
-        (setting: FontSetting) => setting.breakpoint === selectedViewport
-      );
-      
-      if (existingSettingIndex !== -1) {
-        newFontSettings[existingSettingIndex] = {
-          ...newFontSettings[existingSettingIndex],
-          fontSize: stringValue
-        };
-      } else {
-        newFontSettings.push({
-          breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-          fontSize: stringValue,
-          fontLeading: fontLeading || DEFAULT_FONT_LEADING,
-          fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
-        });
+    const entry = Editor.above(editor, {
+      match: (n) => !Editor.isEditor(n) && Element.isElement(n) && 'type' in n,
+    });
+
+    if (entry) {
+      const [node, path] = entry;
+      if (isCustomElement(node)) {
+        setSelectedNode(node);
+        setCurrentPath(path);
+        setFontFamily(node.fontFamily || defaultFontFamily);
+        setFontColor(node.fontColor || defaultFontColor);
+        
+        // Just update the UI state with existing settings
+        if (node.fontSettings) {
+          const settings: Record<string, FontSetting> = {};
+          node.fontSettings.forEach(setting => {
+            settings[setting.breakpoint] = {
+              breakpoint: setting.breakpoint,
+              fontSize: setting.fontSize || null,
+              fontLeading: setting.fontLeading || null,
+              fontAlignment: setting.fontAlignment || null
+            };
+          });
+          setViewportSettings(settings);
+        } else {
+          // If no settings exist, show empty state in UI
+          const emptySettings: Record<string, FontSetting> = {};
+          viewportOptions.forEach((option) => {
+            emptySettings[option.value] = {
+              breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
+              fontSize: null,
+              fontLeading: null,
+              fontAlignment: null
+            };
+          });
+          setViewportSettings(emptySettings);
+        }
       }
     } else {
-      // Create new settings array with the current setting
-      newFontSettings = [{
-        breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-        fontSize: stringValue,
-        fontLeading: fontLeading || DEFAULT_FONT_LEADING,
-        fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
-      }];
+      setSelectedNode(null);
+      setViewportSettings({});
+      setFontFamily(null);
+      setFontColor(null);
     }
-    
-    Transforms.setNodes(
-      editor,
-      { fontSettings: newFontSettings } as Partial<Node>,
-      { at: currentPath }
-    );
-    
-    setFontSize(stringValue);
-    ReactEditor.focus(editor as ReactEditor);
-  };
+  }, [editor.selection]);
 
-  // Handle font leading change
-  const handleFontLeadingChange = (value: string | number) => {
+  // Effect for initializing new nodes with default values
+  useEffect(() => {
     if (!selectedNode || !currentPath.length) return;
-    
-    const stringValue = String(value);
-    
-    // Create or update fontSettings for the current viewport
-    let newFontSettings: FontSetting[] = [];
-    
-    if (selectedNode.fontSettings) {
-      // Clone existing settings
-      newFontSettings = [...selectedNode.fontSettings];
-      
-      // Find and update the setting for the current viewport, or add a new one
-      const existingSettingIndex = newFontSettings.findIndex(
-        (setting: FontSetting) => setting.breakpoint === selectedViewport
-      );
-      
-      if (existingSettingIndex !== -1) {
-        newFontSettings[existingSettingIndex] = {
-          ...newFontSettings[existingSettingIndex],
-          fontLeading: stringValue
-        };
-      } else {
-        newFontSettings.push({
-          breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-          fontSize: fontSize || DEFAULT_FONT_SIZE,
-          fontLeading: stringValue,
-          fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
-        });
-      }
-    } else {
-      // Create new settings array with the current setting
-      newFontSettings = [{
-        breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-        fontSize: fontSize || DEFAULT_FONT_SIZE,
-        fontLeading: stringValue,
-        fontAlignment: fontAlignment || DEFAULT_FONT_ALIGNMENT
-      }];
-    }
-    
-    Transforms.setNodes(
-      editor,
-      { fontSettings: newFontSettings } as Partial<Node>,
-      { at: currentPath }
-    );
-    
-    setFontLeading(stringValue);
-    ReactEditor.focus(editor as ReactEditor);
-  };
 
-  // Handle font alignment change
-  const handleFontAlignmentChange = (value: string | number) => {
-    if (!selectedNode || !currentPath.length) return;
-    
-    const stringValue = String(value);
-    
-    // Create or update fontSettings for the current viewport
-    let newFontSettings: FontSetting[] = [];
-    
-    if (selectedNode.fontSettings) {
-      // Clone existing settings
-      newFontSettings = [...selectedNode.fontSettings];
-      
-      // Find and update the setting for the current viewport, or add a new one
-      const existingSettingIndex = newFontSettings.findIndex(
-        (setting: FontSetting) => setting.breakpoint === selectedViewport
-      );
-      
-      if (existingSettingIndex !== -1) {
-        newFontSettings[existingSettingIndex] = {
-          ...newFontSettings[existingSettingIndex],
-          fontAlignment: stringValue
-        };
-      } else {
-        newFontSettings.push({
-          breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-          fontSize: fontSize || DEFAULT_FONT_SIZE,
-          fontLeading: fontLeading || DEFAULT_FONT_LEADING,
-          fontAlignment: stringValue
-        });
-      }
-    } else {
-      // Create new settings array with the current setting
-      newFontSettings = [{
-        breakpoint: selectedViewport as 'mobile' | 'tablet' | 'desktop',
-        fontSize: fontSize || DEFAULT_FONT_SIZE,
-        fontLeading: fontLeading || DEFAULT_FONT_LEADING,
-        fontAlignment: stringValue
-      }];
-    }
-    
+    // Skip if this node has already been initialized
+    const nodeKey = JSON.stringify(currentPath);
+    if (initializedNodes.has(nodeKey)) return;
+
+    // Initialize a new node with all required properties
+    const initialSettings: Record<string, FontSetting> = {};
+    viewportOptions.forEach((option, index) => {
+      initialSettings[option.value] = {
+        breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
+        fontSize: index === 0 ? defaultFontSize : null,
+        fontLeading: index === 0 ? defaultFontLeading : null,
+        fontAlignment: index === 0 ? defaultFontAlignment : null
+      };
+    });
+
+    const updatedNode = {
+      ...selectedNode,
+      fontFamily: selectedNode.fontFamily || defaultFontFamily,
+      fontColor: selectedNode.fontColor || defaultFontColor,
+      fontSettings: Object.values(initialSettings)
+    };
+
     Transforms.setNodes(
       editor,
-      { fontSettings: newFontSettings } as Partial<Node>,
+      updatedNode as Partial<Node>,
       { at: currentPath }
     );
-    
-    setFontAlignment(stringValue);
-    ReactEditor.focus(editor as ReactEditor);
-  };
+
+    // Mark this node as initialized
+    initializedNodes.add(nodeKey);
+  }, [selectedNode, currentPath.join()]);
 
   if (!selectedNode) {
     return null;
@@ -441,11 +371,11 @@ const StyleToolbar = () => {
             <SingleSelect
               placeholder="Font Family"
               onChange={handleFontFamilyChange}
-              value={fontFamily || DEFAULT_FONT_FAMILY}
+              value={fontFamily || defaultFontFamily}
               disabled={disabled}
               aria-label="Select font family"
             >
-              {FONT_FAMILY_OPTIONS.map((option) => (
+              {fontFamilyOptions.map((option) => (
                 <SingleSelectOption key={option.value} value={option.value}>
                   {option.label}
                 </SingleSelectOption>
@@ -460,11 +390,11 @@ const StyleToolbar = () => {
             <SingleSelect
               placeholder="Color"
               onChange={handleFontColorChange}
-              value={fontColor || DEFAULT_FONT_COLOR}
+              value={fontColor || defaultFontColor}
               disabled={disabled}
               aria-label="Select font color"
             >
-              {FONT_COLOR_OPTIONS.map((option) => (
+              {fontColorOptions.map((option) => (
                 <SingleSelectOption key={option.value} value={option.value}>
                   <Flex alignItems="center" pointerEvents="none">
                     <ColorSwatch color={option.value} />
@@ -478,118 +408,55 @@ const StyleToolbar = () => {
 
         {/* Advanced Settings Popover (Viewport, Font Size, Leading, Alignment) */}
         {showStyleOptions && (
-          <Popover.Root open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+          <Popover.Root>
             <Popover.Trigger>
               <IconButton label="Advanced text settings" variant='ghost'>
                 <Cog />
               </IconButton>
             </Popover.Trigger>
-            <Popover.Content style={{ minWidth: '180px', padding: '12px' }}>
+            <Popover.Content style={{ width: '220px', padding: '12px' }}>
               <Flex direction="column" gap={2} alignItems="flex-start">
                 {/* Viewport Setting */}
-                <SettingGroup>
+                <SettingGroup width="100%">
                   <Tooltip label="Viewport">
                     <SettingIcon>
                       <FontViewportIcon />
                     </SettingIcon>
                   </Tooltip>
-                  <Box flex="1" style={{ width: '100%' }}>
+                  <SelectWrapper flex="1">
                     <SingleSelect
                       placeholder="Viewport"
-                      onChange={handleViewportChange}
-                      value={selectedViewport || DEFAULT_VIEWPORT}
+                      onChange={setSelectedViewport}
+                      value={selectedViewport || defaultViewport}
                       disabled={disabled}
                       aria-label="Select viewport"
                       size="S"
                     >
-                      {VIEWPORT_OPTIONS.map((option) => (
+                      {viewportOptions.map((option) => (
                         <SingleSelectOption key={option.value} value={option.value}>
                           {option.label}
                         </SingleSelectOption>
                       ))}
                     </SingleSelect>
-                  </Box>
+                  </SelectWrapper>
                 </SettingGroup>
 
-                {/* Font Size Setting */}
-                <SettingGroup>
-                  <Tooltip label="Font Size">
-                    <SettingIcon>
-                      <FontSizeIcon />
-                    </SettingIcon>
-                  </Tooltip>
-                  <Box flex="1" style={{ width: '100%' }}>
-                    <SingleSelect
-                      placeholder="Font Size"
-                      onChange={handleFontSizeChange}
-                      value={fontSize || DEFAULT_FONT_SIZE}
-                      disabled={disabled}
-                      aria-label="Select font size"
-                      size="S"
-                    >
-                      {FONT_SIZE_OPTIONS.map((option) => (
-                        <SingleSelectOption key={option.value} value={option.value}>
-                          {option.label}
-                        </SingleSelectOption>
-                      ))}
-                    </SingleSelect>
-                  </Box>
-                </SettingGroup>
-
-                {/* Line Height Setting */}
-                <SettingGroup>
-                  <Tooltip label="Line Height">
-                    <SettingIcon>
-                      <FontLeadingIcon />
-                    </SettingIcon>
-                  </Tooltip>
-                  <Box flex="1" style={{ width: '100%' }}>
-                    <SingleSelect
-                      placeholder="Line Height"
-                      onChange={handleFontLeadingChange}
-                      value={fontLeading || DEFAULT_FONT_LEADING}
-                      disabled={disabled}
-                      aria-label="Select line height"
-                      size="S"
-                    >
-                      {FONT_LEADING_OPTIONS.map((option) => (
-                        <SingleSelectOption key={option.value} value={option.value}>
-                          {option.label}
-                        </SingleSelectOption>
-                      ))}
-                    </SingleSelect>
-                  </Box>
-                </SettingGroup>
-
-                {/* Text Alignment Setting */}
-                <SettingGroup>
-                  <Tooltip label="Text Alignment">
-                    <SettingIcon>
-                      <FontAlignmentIcon />
-                    </SettingIcon>
-                  </Tooltip>
-                  <Box flex="1" style={{ width: '100%' }}>
-                    <SingleSelect
-                      placeholder="Alignment"
-                      onChange={handleFontAlignmentChange}
-                      value={fontAlignment || DEFAULT_FONT_ALIGNMENT}
-                      disabled={disabled}
-                      aria-label="Select text alignment"
-                      size="S"
-                    >
-                      {FONT_ALIGNMENT_OPTIONS.map((option) => (
-                        <SingleSelectOption key={option.value} value={option.value}>
-                          {option.label}
-                        </SingleSelectOption>
-                      ))}
-                    </SingleSelect>
-                  </Box>
-                </SettingGroup>
+                <DynamicSettings
+                  viewport={selectedViewport}
+                  settings={viewportSettings}
+                  onSettingChange={updateViewportSetting}
+                  disabled={disabled}
+                  fontSizeOptions={fontSizeOptions}
+                  fontLeadingOptions={fontLeadingOptions}
+                  fontAlignmentOptions={fontAlignmentOptions}
+                  viewportOptions={viewportOptions}
+                />
               </Flex>
             </Popover.Content>
           </Popover.Root>
         )}
       </Flex>
+
       {showStyleOptions && (
         <ToolbarSeparator />
       )}

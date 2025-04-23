@@ -12,6 +12,18 @@ interface InputProps {
       regex?: string;
       minLength?: number;
       unique?: boolean;
+      disableDefaultFonts?: boolean;
+      disableDefaultSizes?: boolean;
+      disableDefaultLineHeights?: boolean;
+      disableDefaultAlignments?: boolean;
+      disableDefaultViewports?: boolean;
+      disableDefaultColors?: boolean;
+      customFontsPresets?: string;
+      customColorsPresets?: string;
+      customViewportsPresets?: string;
+      customAlignmentsPresets?: string;
+      customLineHeightsPresets?: string;
+      customSizesPresets?: string;
     };
   };
   description?: { id: string; defaultMessage: string };
@@ -27,6 +39,8 @@ interface InputProps {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+
+  console.log(props, 'props');
   // Get initial editor value
   const getInitialValue = () => {
     try {
@@ -73,6 +87,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
           value={editorValue}
           ariaLabelId={props.name}
           disabled={props.disabled}
+          pluginOptions={props.attribute.options}
           onChange={(eventOrPath, value) => {
             if (typeof eventOrPath === 'string') {
               handleChange(eventOrPath, value);
