@@ -119,7 +119,7 @@ const DynamicSettings = ({
             aria-label="Select or create font size"
             value={fontSize || ''}
             onChange={(value) => onSettingChange('fontSize', value, breakpoint)}
-            creatable={isFontSizeValid ? "visible" : false}
+            creatable={isFontSizeValid}
             onTextValueChange={(value) => setIsFontSizeValid(isValidNumber(value))}
             onCreateOption={(value) => {
               if (value) {
@@ -155,7 +155,7 @@ const DynamicSettings = ({
             aria-label="Select or set line height"
             value={fontLeading || ''}
             onChange={(value) => onSettingChange('fontLeading', value, breakpoint)}
-            creatable={isFontLeadingValid ? "visible" : false}
+            creatable={isFontLeadingValid}
             onTextValueChange={(value) => setIsFontLeadingValid(isValidNumber(value))}
             onCreateOption={(value) => {
               if (value) {
@@ -191,7 +191,7 @@ const DynamicSettings = ({
             aria-label="Select or set letter spacing"
             value={fontTracking || ''}
             onChange={(value) => onSettingChange('fontTracking', value, breakpoint)}
-            creatable={isFontTrackingValid ? "visible" : false}
+            creatable={isFontTrackingValid}
             onTextValueChange={(value) => setIsFontTrackingValid(isValidNumber(value, true))}
             onCreateOption={(value) => {
               if (value) {
