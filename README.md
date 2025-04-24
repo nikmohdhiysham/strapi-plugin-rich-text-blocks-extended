@@ -19,6 +19,12 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - ✨ On-the-fly custom values for font size, line height, and letter spacing
 - 🔄 Expandable editor interface
 
+## ⚠️ Known Limitations
+
+Due to Strapi's custom field architecture limitations:
+
+1. **Media Library Integration**: The image block does not work. This is because Strapi's custom fields cannot officially use special data types like media.
+
 ## ⚙️ Installation
 
 ```bash
