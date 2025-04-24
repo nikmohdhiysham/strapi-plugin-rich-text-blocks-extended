@@ -6,8 +6,6 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 
 ![Documentation Image](https://iili.io/3MYVIqJ.gif)
 
-![Documentation Image](https://iili.io/3M7M8YB.png)
-
 ## 🚀 Features
 
 - 📝 All native Rich Text Blocks features
