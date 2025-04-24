@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import {
   Box,
@@ -9,7 +9,7 @@ import {
   IconButton,
   Tooltip,
 } from '@strapi/design-system';
-import { Editor, Transforms, Node, Element } from 'slate';
+import { Editor, Element } from 'slate';
 import { styled } from 'styled-components';
 import { Cog } from '@strapi/icons';
 
@@ -115,13 +115,12 @@ const SettingIcon = styled(Box)`
 `;
 
 const getDefaultValue = (options: any[], defaultValue: string) => {
-  const defaultOption = options.find(opt => opt.isDefault === true);
-
-  if (defaultOption) { return defaultOption.value }
-  if (options.length > 0) { return options[0].value }
-    
+  const foundOption = options.find(opt => opt.value === defaultValue);
+  if (foundOption) return foundOption.value;
+  if (options.length > 0) return options[0].value;
   return defaultValue;
 };
+
 interface PluginOptions {
   disableDefaultFonts?: boolean;
   disableDefaultSizes?: boolean;
@@ -146,8 +145,15 @@ const isCustomElement = (node: unknown): node is CustomElement => {
          (!('fontSettings' in node) || Array.isArray((node as any).fontSettings));
 };
 
+// Add type for node properties
+interface NodeProperties {
+  fontSettings?: FontSetting[];
+  fontFamily?: string;
+  fontColor?: string;
+  type?: string;
+}
+
 const StyleToolbar = () => {
-  const initializedNodes = new Set<string>();
   const { editor, disabled, pluginOptions = {} } = useBlocksEditorContext('StyleToolbar');
 
   // Get styling options based on plugin configuration
@@ -197,25 +203,81 @@ const StyleToolbar = () => {
   const defaultFontAlignment = getDefaultValue(fontAlignmentOptions, DEFAULT_FONT_ALIGNMENT);
   const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
 
-  // State for the style toolbar
-  const [selectedNode, setSelectedNode] = useState<CustomElement | null>(null);
-  const [currentPath, setCurrentPath] = useState<any[]>([]);
-  const [fontFamily, setFontFamily] = useState<string | null>(null);
-  const [fontColor, setFontColor] = useState<string | null>(null);
-  const [selectedViewport, setSelectedViewport] = useState<string | number>(defaultViewport);
+  // State for the style toolbar - only update when selection changes to a different node
+  const [selectedViewport, setSelectedViewport] = useState(defaultViewport);
   const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
 
-  const getDefaultSettings = (viewport: string) => {
-    return {
-      breakpoint: viewport,
-      fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
-      fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
-      fontTracking: viewport === viewportOptions[0].value ? defaultFontTracking : null,
-      fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
+  // Get current selected node
+  const entry = editor.selection ? Editor.above(editor, {
+    match: (n) => !Editor.isEditor(n) && Element.isElement(n) && 'type' in n,
+  }) : null;
+
+  const selectedNode = entry ? entry[0] as CustomElement : null;
+  const currentPath = entry ? entry[1] : [];
+
+  // Initialize viewport settings when node changes - THIS CAN BE IMPROVED
+  React.useEffect(() => {
+    if (!selectedNode) {
+      setViewportSettings({});
+      return;
     }
-  }
+
+    if (isCustomElement(selectedNode)) {
+      // Initialize settings from node's fontSettings or create empty settings
+      if (selectedNode.fontSettings) {
+        const settings: Record<string, FontSetting> = {};
+        selectedNode.fontSettings.forEach(setting => {
+          settings[setting.breakpoint] = {
+            breakpoint: setting.breakpoint,
+            fontSize: setting.fontSize || null,
+            fontLeading: setting.fontLeading || null,
+            fontTracking: setting.fontTracking || null,
+            fontAlignment: setting.fontAlignment || null
+          };
+        });
+        setViewportSettings(settings);
+      } else {
+        // If no settings exist, initialize with empty settings for each viewport
+        const emptySettings: Record<string, FontSetting> = {};
+        viewportOptions.forEach((option) => {
+          emptySettings[option.value] = getDefaultSettings(option.value);
+        });
+        setViewportSettings(emptySettings);
+
+        // Initialize the node with default settings
+        if (!['code', 'image'].includes(selectedNode.type)) {
+          const properties = {
+            fontFamily: selectedNode.fontFamily || defaultFontFamily,
+            fontColor: selectedNode.fontColor || defaultFontColor,
+            fontSettings: Object.values(emptySettings)
+          } as unknown as Partial<Node>;
+
+          Editor.withoutNormalizing(editor, () => {
+            editor.apply({
+              type: 'set_node',
+              path: currentPath,
+              properties,
+              newProperties: properties
+            });
+          });
+        }
+      }
+    }
+  }, [selectedNode?.type, currentPath.join()]);
+
+  // Get current node's font settings
+  const fontFamily = selectedNode?.fontFamily || defaultFontFamily;
+  const fontColor = selectedNode?.fontColor || defaultFontColor;
+
+  const getDefaultSettings = (viewport: string) => ({
+    breakpoint: viewport,
+    fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
+    fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
+    fontTracking: viewport === viewportOptions[0].value ? defaultFontTracking : null,
+    fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
+  });
   
-  // Reusable handler for updating viewport-specific settings
+  // Update viewport settings without triggering re-renders during typing
   const updateViewportSetting = (
     settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking',
     value: string | number,
@@ -226,28 +288,30 @@ const StyleToolbar = () => {
     const stringValue = String(value);
     
     // Update the viewportSettings state
-    setViewportSettings(prev => {
-      const newSettings = { ...prev };
-      
-      if (!newSettings[viewport]) {
-        newSettings[viewport] = getDefaultSettings(viewport);
-      }
+    const newSettings = { ...viewportSettings };
+    
+    if (!newSettings[viewport]) {
+      newSettings[viewport] = getDefaultSettings(viewport);
+    }
 
-      newSettings[viewport] = {
-        ...newSettings[viewport],
-        [settingKey]: stringValue
-      };
+    newSettings[viewport] = {
+      ...newSettings[viewport],
+      [settingKey]: stringValue
+    };
 
-      // Update the node with all viewport settings
-      const allSettings = Object.values(newSettings);
-      Transforms.setNodes(
-        editor,
-        { fontSettings: allSettings } as Partial<Node>,
-        { at: currentPath }
-      );
-      
-      return newSettings;
+    // Update the node with all viewport settings
+    const allSettings = Object.values(newSettings);
+    Editor.withoutNormalizing(editor, () => {
+      const properties = { fontSettings: allSettings } as unknown as Partial<Node>;
+      editor.apply({
+        type: 'set_node',
+        path: currentPath,
+        properties,
+        newProperties: properties
+      });
     });
+    
+    setViewportSettings(newSettings);
   };
 
   // Handle font family change
@@ -256,13 +320,15 @@ const StyleToolbar = () => {
     
     const stringValue = String(value);
     
-    Transforms.setNodes(
-      editor,
-      { fontFamily: stringValue } as Partial<Node>,
-      { at: currentPath }
-    );
-    
-    setFontFamily(stringValue);
+    Editor.withoutNormalizing(editor, () => {
+      const properties = { fontFamily: stringValue } as unknown as Partial<Node>;
+      editor.apply({
+        type: 'set_node',
+        path: currentPath,
+        properties,
+        newProperties: properties
+      });
+    });
   };
 
   // Handle font color change
@@ -271,112 +337,16 @@ const StyleToolbar = () => {
     
     const stringValue = String(value);
     
-    Transforms.setNodes(
-      editor,
-      { fontColor: stringValue } as Partial<Node>,
-      { at: currentPath }
-    );  
-    
-    setFontColor(stringValue);
-  };
-
-  // Effect for handling selection changes - keep this light
-  useEffect(() => {
-    console.log('1ST USEFFECT');
-
-    if (!editor.selection) {
-      setSelectedNode(null);
-      setViewportSettings({});
-      setFontFamily(null);
-      setFontColor(null);
-      return;
-    }
-
-    const entry = Editor.above(editor, {
-      match: (n) => !Editor.isEditor(n) && Element.isElement(n) && 'type' in n,
-    });
-
-    if (entry) {
-      const [node, path] = entry;
-      if (isCustomElement(node)) {
-        setSelectedNode(node);
-        setCurrentPath(path);
-        setFontFamily(node.fontFamily || defaultFontFamily);
-        setFontColor(node.fontColor || defaultFontColor);
-        
-        // Just update the UI state with existing settings
-        if (node.fontSettings) {
-          const settings: Record<string, FontSetting> = {};
-          node.fontSettings.forEach(setting => {
-            settings[setting.breakpoint] = {
-              breakpoint: setting.breakpoint,
-              fontSize: setting.fontSize || null,
-              fontLeading: setting.fontLeading || null,
-              fontTracking: setting.fontTracking || null,
-              fontAlignment: setting.fontAlignment || null
-            };
-          });
-          setViewportSettings(settings);
-        } else {
-          // If no settings exist, show empty state in UI
-          const emptySettings: Record<string, FontSetting> = {};
-          viewportOptions.forEach((option) => {
-            emptySettings[option.value] = {
-              breakpoint: option.value,
-              fontSize: null,
-              fontLeading: null,
-              fontTracking: null,
-              fontAlignment: null
-            };
-          });
-          setViewportSettings(emptySettings);
-        }
-      }
-    } else {
-      setSelectedNode(null);
-      setViewportSettings({});
-      setFontFamily(null);
-      setFontColor(null);
-    }
-  }, [editor.selection]);
-
-  // Effect for initializing new nodes with default values
-  useEffect(() => {
-    console.log('2ND USEFFECT');
-
-    if (!selectedNode || !currentPath.length) return;
-
-    // Skip if this node has already been initialized
-    const nodeKey = JSON.stringify(currentPath);
-    if (initializedNodes.has(nodeKey)) return;
-
-    const isStyleableBlock = !['code', 'image'].includes(selectedNode.type);
-    
-    if (isStyleableBlock && !selectedNode.fontSettings) {
-      // Only initialize if node doesn't have font settings
-      const initialSettings: Record<string, FontSetting> = {};
-
-      viewportOptions.forEach((option) => {
-        initialSettings[option.value] = getDefaultSettings(option.value);
+    Editor.withoutNormalizing(editor, () => {
+      const properties = { fontColor: stringValue } as unknown as Partial<Node>;
+      editor.apply({
+        type: 'set_node',
+        path: currentPath,
+        properties,
+        newProperties: properties
       });
-
-      const updatedNode = {
-        ...selectedNode,
-        fontFamily: selectedNode.fontFamily || defaultFontFamily,
-        fontColor: selectedNode.fontColor || defaultFontColor,
-        fontSettings: Object.values(initialSettings)
-      };
-
-      Transforms.setNodes(
-        editor,
-        updatedNode as Partial<Node>,
-        { at: currentPath }
-      );
-    }
-
-    // Mark this node as initialized
-    initializedNodes.add(nodeKey);
-  }, [selectedNode, currentPath.join()]);
+    });
+  };
 
   if (!selectedNode) {
     return null;
@@ -393,7 +363,7 @@ const StyleToolbar = () => {
             <SingleSelect
               placeholder="Font Family"
               onChange={handleFontFamilyChange}
-              value={fontFamily || defaultFontFamily}
+              value={fontFamily}
               disabled={disabled}
               aria-label="Select font family"
             >
@@ -412,7 +382,7 @@ const StyleToolbar = () => {
             <SingleSelect
               placeholder="Color"
               onChange={handleFontColorChange}
-              value={fontColor || defaultFontColor}
+              value={fontColor}
               disabled={disabled}
               aria-label="Select font color"
             >
@@ -449,7 +419,7 @@ const StyleToolbar = () => {
                     <SingleSelect
                       placeholder="Viewport"
                       onChange={setSelectedViewport}
-                      value={selectedViewport || defaultViewport}
+                      value={selectedViewport}
                       disabled={disabled}
                       aria-label="Select viewport"
                       size="S"
