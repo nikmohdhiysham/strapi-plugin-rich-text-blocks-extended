@@ -4,11 +4,9 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 
 ## Preview
 
-![Documentation Image](https://iili.io/3M7MSkP.png)
+![Documentation Image](https://iili.io/3MYVIqJ.gif)
 
 ![Documentation Image](https://iili.io/3M7M8YB.png)
-
-![Documentation Image](https://iili.io/3M7M6Qa.png)
 
 ## 🚀 Features
 
@@ -20,6 +18,7 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - ↕️ Adjustable line heights
 - ↔️ Letter spacing control
 - ⬅️ Text alignment options
+- ✨ On-the-fly custom values for font size, line height, and letter spacing
 - 🔄 Expandable editor interface
 
 ## ⚙️ Installation
