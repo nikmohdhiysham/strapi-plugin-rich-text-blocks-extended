@@ -39,8 +39,6 @@ interface InputProps {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
-
-  console.log(props, 'props');
   // Get initial editor value
   const getInitialValue = () => {
     try {

@@ -38,12 +38,22 @@ const baseHandleConvert = <T extends CustomElement>(
   }
 
   const [element, elementPath] = entry;
+  
+  // Extract font settings from the current element
+  const { fontFamily, fontColor, fontSettings } = element;
+
+  // Only preserve font settings if not converting to code or image blocks
+  const shouldPreserveFontSettings = !['code', 'image'].includes(attributesToSet.type);
 
   Transforms.setNodes<CustomElement>(
     editor,
     {
       ...getAttributesToClear(element),
       ...attributesToSet,
+      // Preserve font settings if they exist and block type allows it
+      ...(shouldPreserveFontSettings && fontFamily && { fontFamily }),
+      ...(shouldPreserveFontSettings && fontColor && { fontColor }),
+      ...(shouldPreserveFontSettings && fontSettings && { fontSettings }),
     },
     { at: elementPath }
   );
@@ -52,17 +62,29 @@ const baseHandleConvert = <T extends CustomElement>(
 };
 
 /**
- * Set all attributes except type and children to null so that Slate deletes them
+ * Set all attributes except type, children, and font settings to null so that Slate deletes them
  */
 const getAttributesToClear = (element: CustomElement) => {
-  const { children: _children, type: _type, ...extra } = element;
+  const { 
+    children: _children, 
+    type: _type, 
+    fontFamily,
+    fontColor,
+    fontSettings,
+    ...extra 
+  } = element;
 
   const attributesToClear = Object.keys(extra).reduce(
     (currentAttributes, key) => ({ ...currentAttributes, [key]: null }),
     {}
   );
 
-  return attributesToClear as Record<string, null>;
+  return {
+    ...attributesToClear,
+    fontFamily,
+    fontColor,
+    fontSettings,
+  } as Record<string, any>;
 };
 
 export { baseHandleConvert, getAttributesToClear };

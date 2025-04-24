@@ -66,8 +66,8 @@ const SelectWrapper = styled(Box)`
   `}
 `;
 
-const ViewportSettings = styled(Box)<{ isActive: boolean }>`
-  display: ${({ isActive }) => isActive ? 'block' : 'none'};
+const ViewportSettings = styled(Box)<{ $isActive: boolean }>`
+  display: ${({ $isActive }) => $isActive ? 'block' : 'none'};
 `;
 
 const getInitialOptions = (value: string | null, initialOptions: Option[]) : Option[] => {
@@ -104,7 +104,7 @@ const DynamicSettings = ({
   };
 
   return (
-    <ViewportSettings isActive={isActive}>
+    <ViewportSettings $isActive={isActive}>
       <SettingGroup width="100%">
         <Tooltip label="Font Size">
           <SettingIcon>

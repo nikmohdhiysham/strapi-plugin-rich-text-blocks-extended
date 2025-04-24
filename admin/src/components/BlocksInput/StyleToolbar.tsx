@@ -114,6 +114,14 @@ const SettingIcon = styled(Box)`
   color: ${({ theme }) => theme.colors.neutral600};
 `;
 
+const getDefaultValue = (options: any[], defaultValue: string) => {
+  const defaultOption = options.find(opt => opt.isDefault === true);
+
+  if (defaultOption) { return defaultOption.value }
+  if (options.length > 0) { return options[0].value }
+    
+  return defaultValue;
+};
 interface PluginOptions {
   disableDefaultFonts?: boolean;
   disableDefaultSizes?: boolean;
@@ -134,20 +142,13 @@ interface PluginOptions {
 const isCustomElement = (node: unknown): node is CustomElement => {
   return Element.isElement(node) && 
          'type' in node && 
-         typeof (node as any).type === 'string';
+         typeof (node as any).type === 'string' &&
+         (!('fontSettings' in node) || Array.isArray((node as any).fontSettings));
 };
 
 const StyleToolbar = () => {
+  const initializedNodes = new Set<string>();
   const { editor, disabled, pluginOptions = {} } = useBlocksEditorContext('StyleToolbar');
-  const [selectedNode, setSelectedNode] = useState<CustomElement | null>(null);
-  const [currentPath, setCurrentPath] = useState<any[]>([]);
-  const [fontFamily, setFontFamily] = useState<string | null>(null);
-  const [fontColor, setFontColor] = useState<string | null>(null);
-  const [selectedViewport, setSelectedViewport] = useState<string | number>('mobile');
-  const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
-
-  // Track if a node has been initialized
-  const [initializedNodes] = useState(new Set<string>());
 
   // Get styling options based on plugin configuration
   const typedPluginOptions = pluginOptions as PluginOptions;
@@ -187,15 +188,6 @@ const StyleToolbar = () => {
     typedPluginOptions?.disableDefaultAlignments
   );
 
-  const getDefaultValue = (options: any[], defaultValue: string) => {
-    const defaultOption = options.find(opt => opt.isDefault === true);
-
-    if (defaultOption) { return defaultOption.value }
-    if (options.length > 0) { return options[0].value }
-      
-    return defaultValue;
-  };
-
   // Get default values based on plugin configuration or fall back to system defaults
   const defaultFontFamily = getDefaultValue(fontFamilyOptions, DEFAULT_FONT_FAMILY);
   const defaultFontColor = getDefaultValue(fontColorOptions, DEFAULT_FONT_COLOR);
@@ -205,6 +197,24 @@ const StyleToolbar = () => {
   const defaultFontAlignment = getDefaultValue(fontAlignmentOptions, DEFAULT_FONT_ALIGNMENT);
   const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
 
+  // State for the style toolbar
+  const [selectedNode, setSelectedNode] = useState<CustomElement | null>(null);
+  const [currentPath, setCurrentPath] = useState<any[]>([]);
+  const [fontFamily, setFontFamily] = useState<string | null>(null);
+  const [fontColor, setFontColor] = useState<string | null>(null);
+  const [selectedViewport, setSelectedViewport] = useState<string | number>(defaultViewport);
+  const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
+
+  const getDefaultSettings = (viewport: string) => {
+    return {
+      breakpoint: viewport,
+      fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
+      fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
+      fontTracking: viewport === viewportOptions[0].value ? defaultFontTracking : null,
+      fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
+    }
+  }
+  
   // Reusable handler for updating viewport-specific settings
   const updateViewportSetting = (
     settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking',
@@ -218,15 +228,11 @@ const StyleToolbar = () => {
     // Update the viewportSettings state
     setViewportSettings(prev => {
       const newSettings = { ...prev };
+      
       if (!newSettings[viewport]) {
-        newSettings[viewport] = {
-          breakpoint: viewport as 'mobile' | 'tablet' | 'desktop',
-          fontSize: viewport === viewportOptions[0].value ? defaultFontSize : null,
-          fontLeading: viewport === viewportOptions[0].value ? defaultFontLeading : null,
-          fontTracking: viewport === viewportOptions[0].value ? defaultFontTracking : null,
-          fontAlignment: viewport === viewportOptions[0].value ? defaultFontAlignment : null
-        };
+        newSettings[viewport] = getDefaultSettings(viewport);
       }
+
       newSettings[viewport] = {
         ...newSettings[viewport],
         [settingKey]: stringValue
@@ -276,6 +282,8 @@ const StyleToolbar = () => {
 
   // Effect for handling selection changes - keep this light
   useEffect(() => {
+    console.log('1ST USEFFECT');
+
     if (!editor.selection) {
       setSelectedNode(null);
       setViewportSettings({});
@@ -314,7 +322,7 @@ const StyleToolbar = () => {
           const emptySettings: Record<string, FontSetting> = {};
           viewportOptions.forEach((option) => {
             emptySettings[option.value] = {
-              breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
+              breakpoint: option.value,
               fontSize: null,
               fontLeading: null,
               fontTracking: null,
@@ -334,36 +342,37 @@ const StyleToolbar = () => {
 
   // Effect for initializing new nodes with default values
   useEffect(() => {
+    console.log('2ND USEFFECT');
+
     if (!selectedNode || !currentPath.length) return;
 
     // Skip if this node has already been initialized
     const nodeKey = JSON.stringify(currentPath);
     if (initializedNodes.has(nodeKey)) return;
 
-    // Initialize a new node with all required properties
-    const initialSettings: Record<string, FontSetting> = {};
-    viewportOptions.forEach((option, index) => {
-      initialSettings[option.value] = {
-        breakpoint: option.value as 'mobile' | 'tablet' | 'desktop',
-        fontSize: index === 0 ? defaultFontSize : null,
-        fontLeading: index === 0 ? defaultFontLeading : null,
-        fontTracking: index === 0 ? defaultFontTracking : null,
-        fontAlignment: index === 0 ? defaultFontAlignment : null
+    const isStyleableBlock = !['code', 'image'].includes(selectedNode.type);
+    
+    if (isStyleableBlock && !selectedNode.fontSettings) {
+      // Only initialize if node doesn't have font settings
+      const initialSettings: Record<string, FontSetting> = {};
+
+      viewportOptions.forEach((option) => {
+        initialSettings[option.value] = getDefaultSettings(option.value);
+      });
+
+      const updatedNode = {
+        ...selectedNode,
+        fontFamily: selectedNode.fontFamily || defaultFontFamily,
+        fontColor: selectedNode.fontColor || defaultFontColor,
+        fontSettings: Object.values(initialSettings)
       };
-    });
 
-    const updatedNode = {
-      ...selectedNode,
-      fontFamily: selectedNode.fontFamily || defaultFontFamily,
-      fontColor: selectedNode.fontColor || defaultFontColor,
-      fontSettings: Object.values(initialSettings)
-    };
-
-    Transforms.setNodes(
-      editor,
-      updatedNode as Partial<Node>,
-      { at: currentPath }
-    );
+      Transforms.setNodes(
+        editor,
+        updatedNode as Partial<Node>,
+        { at: currentPath }
+      );
+    }
 
     // Mark this node as initialized
     initializedNodes.add(nodeKey);

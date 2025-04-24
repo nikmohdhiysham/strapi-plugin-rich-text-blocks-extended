@@ -8,7 +8,7 @@ export interface Option {
 }
 
 export interface FontSetting {
-  breakpoint: 'mobile' | 'tablet' | 'desktop';
+  breakpoint: string;
   fontSize: string | null;
   fontLeading: string | null;
   fontAlignment: string | null;
