@@ -204,6 +204,7 @@ const StyleToolbar = () => {
   const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
 
   // State for the style toolbar - only update when selection changes to a different node
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedViewport, setSelectedViewport] = useState(defaultViewport);
   const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
 
@@ -400,7 +401,14 @@ const StyleToolbar = () => {
 
         {/* Advanced Settings Popover (Viewport, Font Size, Leading, Alignment) */}
         {showStyleOptions && (
-          <Popover.Root>
+          <Popover.Root open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
+
+            // Reset on open
+            if (open) {
+              setSelectedViewport(defaultViewport);
+            }
+          }}>
             <Popover.Trigger>
               <IconButton label="Advanced text settings" variant='ghost'>
                 <Cog />
