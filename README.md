@@ -16,6 +16,7 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - ↕️ Adjustable line heights
 - ↔️ Letter spacing control
 - ⬅️ Text alignment options
+- 🔠 Text formatting options including uppercase transform
 - ✨ On-the-fly custom values for font size, line height, and letter spacing
 - 🔄 Expandable editor interface
 
@@ -119,6 +120,19 @@ Justify:justify
 1. After installation, the plugin will be available as a custom field type in your Content-Types Builder.
 2. Add a new field and select "Rich Text Blocks (Extended)" as the field type.
 3. Configure the field options according to your needs using the settings above.
+
+## 🔡 Text Formatting
+
+The editor supports various text formatting options:
+
+- **Uppercase**: Transform selected text to uppercase using the AA button or Ctrl/Cmd+A
+- **Bold**: Apply using the B button in the toolbar or Ctrl/Cmd+B
+- **Italic**: Apply using the I button in the toolbar or Ctrl/Cmd+I
+- **Underline**: Apply using the U button in the toolbar or Ctrl/Cmd+U
+- **Strikethrough**: Apply using the S button in the toolbar or Ctrl/Cmd+Shift+S
+- **Inline code**: Apply using the Code button in the toolbar or Ctrl/Cmd+E
+
+These formatting options can be applied to any text within paragraphs, headings, lists, and quotes.
 
 ## 📝 Block Types
 

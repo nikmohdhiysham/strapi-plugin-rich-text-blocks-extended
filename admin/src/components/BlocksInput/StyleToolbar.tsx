@@ -281,12 +281,12 @@ const StyleToolbar = () => {
   // Update viewport settings without triggering re-renders during typing
   const updateViewportSetting = (
     settingKey: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking',
-    value: string | number,
+    value: string | number | null,
     viewport: string
   ) => {
     if (!selectedNode || !currentPath.length) return;
     
-    const stringValue = String(value);
+    const newValue = !value ? null : String(value);
     
     // Update the viewportSettings state
     const newSettings = { ...viewportSettings };
@@ -297,7 +297,7 @@ const StyleToolbar = () => {
 
     newSettings[viewport] = {
       ...newSettings[viewport],
-      [settingKey]: stringValue
+      [settingKey]: newValue
     };
 
     // Update the node with all viewport settings

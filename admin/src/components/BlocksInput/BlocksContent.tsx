@@ -21,7 +21,7 @@ import {
 } from '@strapi/design-system';
 import { Drag } from '@strapi/icons';
 import { useIntl } from 'react-intl';
-import { Editor, Range, Transforms, Element as SlateElement, Node as SlateNode, Point } from 'slate';
+import { Editor, Range, Transforms } from 'slate';
 import { ReactEditor, type RenderElementProps, type RenderLeafProps, Editable } from 'slate-react';
 import { styled, CSSProperties, css } from 'styled-components';
 
@@ -31,7 +31,7 @@ import { getTranslation } from '../../utils/getTranslation';
 import { decorateCode } from './Blocks/Code';
 import { type BlocksStore, useBlocksEditorContext } from './BlocksEditor';
 import { useConversionModal } from './BlocksToolbar';
-import { CustomElement, CustomText, getEntries, isLinkNode, isListNode } from './utils/types';
+import { CustomElement, getEntries, isLinkNode, isListNode } from './utils/types';
 
 const StyledEditable = styled(Editable)<{ $isExpandedMode: boolean }>`
   // The outline style is set on the wrapper with :focus-within
@@ -141,7 +141,7 @@ const SortableDragAndDropElement = ({
   dragDirection,
   dragHandleTopMargin,
 }: DragAndDropElementProps) => {
-  const { editor, disabled, name, setLiveText } = useBlocksEditorContext('drag-and-drop');
+  const { editor, disabled } = useBlocksEditorContext('drag-and-drop');
   const { formatMessage } = useIntl();
   const [dragVisibility, setDragVisibility] = React.useState<CSSProperties['visibility']>('hidden');
 
@@ -273,12 +273,6 @@ interface ExtendedRenderLeafProps extends RenderLeafProps {
   leaf: RenderLeafProps['leaf'] & { className?: string };
 }
 
-type BaseRenderElementProps = Direction & {
-  props: RenderElementProps['children'];
-  blocks: BlocksStore;
-  editor: Editor;
-};
-
 interface BlocksContentProps {
   placeholder?: string;
   ariaLabelId: string;
@@ -318,7 +312,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
   const blocksRef = React.useRef<HTMLDivElement>(null);
   const { formatMessage } = useIntl();
   const [dragDirection, setDragDirection] = React.useState<DragDirection | null>(null);
-  const { modalElement, handleConversionResult } = useConversionModal();
+  const { modalElement } = useConversionModal();
 
   // Set up sensors for drag detection
   const sensors = useSensors(
@@ -431,7 +425,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
       }
     });
 
-  }, [editor, blocks, handleConversionResult]); // handleConversionResult might not be used in this simplified version
+  }, [editor, blocks]);
 
   const handleEnter = React.useCallback((event: React.KeyboardEvent<HTMLElement>) => {
     if (!editor.selection) return;

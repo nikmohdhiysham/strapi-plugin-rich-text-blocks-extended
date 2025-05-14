@@ -1,7 +1,8 @@
 import * as React from 'react';
 
 import { Typography, TypographyComponent } from '@strapi/design-system';
-import { Bold, Italic, Underline, StrikeThrough, Code } from '@strapi/icons';
+import {  Bold, Italic, Underline, StrikeThrough, Code } from '@strapi/icons';
+import { Uppercase } from './FontModifiersIcons';
 import { type MessageDescriptor } from 'react-intl';
 import { Editor, Text, Transforms } from 'slate';
 import { styled, css } from 'styled-components';
@@ -10,6 +11,12 @@ const stylesToInherit = css`
   font-size: inherit;
   color: inherit;
   line-height: inherit;
+`;
+
+const UppercaseText = styled<TypographyComponent>(Typography).attrs({
+  textTransform: 'uppercase',
+})`
+  ${stylesToInherit}
 `;
 
 const BoldText = styled<TypographyComponent>(Typography).attrs({ fontWeight: 'bold' })`
@@ -86,6 +93,14 @@ const baseHandleToggle = (editor: Editor, name: ModifierKey) => {
 };
 
 const modifiers: ModifiersStore = {
+  uppercase: {
+    icon: Uppercase,
+    isValidEventKey: (event: React.KeyboardEvent<HTMLElement>) => event.key === 'A',
+    label: { id: 'components.Blocks.modifiers.uppercase', defaultMessage: 'Uppercase' },
+    checkIsActive: (editor: Editor) => baseCheckIsActive(editor, 'uppercase' as never),
+    handleToggle: (editor: Editor) => baseHandleToggle(editor, 'uppercase' as never),
+    renderLeaf: (children: React.JSX.Element | string) => <UppercaseText>{children}</UppercaseText>,
+  },
   bold: {
     icon: Bold,
     isValidEventKey: (event: React.KeyboardEvent<HTMLElement>) => event.key === 'b',

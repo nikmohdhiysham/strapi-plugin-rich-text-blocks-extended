@@ -49,7 +49,7 @@ const pressEnterTwiceToExit = (editor: Editor) => {
 
   // If there's nothing after the cursor, disable modifiers
   if (isNodeEnd) {
-    ['bold', 'italic', 'underline', 'strikethrough', 'code'].forEach((modifier) => {
+    ['uppercase', 'bold', 'italic', 'underline', 'strikethrough', 'code'].forEach((modifier) => {
       Editor.removeMark(editor, modifier);
     });
   }
