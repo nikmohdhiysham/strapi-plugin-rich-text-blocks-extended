@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { Typography, TypographyComponent } from '@strapi/design-system';
 import {  Bold, Italic, Underline, StrikeThrough, Code } from '@strapi/icons';
-import { Uppercase } from './FontModifiersIcons';
+import { Subsscript, Superscript, Uppercase } from './FontModifiersIcons';
 import { type MessageDescriptor } from 'react-intl';
 import { Editor, Text, Transforms } from 'slate';
 import { styled, css } from 'styled-components';
@@ -16,6 +16,18 @@ const stylesToInherit = css`
 const UppercaseText = styled<TypographyComponent>(Typography).attrs({
   textTransform: 'uppercase',
 })`
+  ${stylesToInherit}
+`;
+
+const SuperscriptText = styled<TypographyComponent>(Typography)`
+  vertical-align: super;
+  font-size: smaller !important;
+  ${stylesToInherit}
+`;
+
+const SubscriptText = styled<TypographyComponent>(Typography)`
+  vertical-align: sub;
+  font-size: smaller !important;
   ${stylesToInherit}
 `;
 
@@ -100,6 +112,22 @@ const modifiers: ModifiersStore = {
     checkIsActive: (editor: Editor) => baseCheckIsActive(editor, 'uppercase' as never),
     handleToggle: (editor: Editor) => baseHandleToggle(editor, 'uppercase' as never),
     renderLeaf: (children: React.JSX.Element | string) => <UppercaseText>{children}</UppercaseText>,
+  },
+  superscript: {
+    icon: Superscript,
+    isValidEventKey: (event: React.KeyboardEvent<HTMLElement>) => event.key === 'A',
+    label: { id: 'components.Blocks.modifiers.superscript', defaultMessage: 'Superscript' },
+    checkIsActive: (editor: Editor) => baseCheckIsActive(editor, 'superscript' as never),
+    handleToggle: (editor: Editor) => baseHandleToggle(editor, 'superscript' as never),
+    renderLeaf: (children: React.JSX.Element | string) => <SuperscriptText>{children}</SuperscriptText>,
+  },
+  subscript: {
+    icon: Subsscript,
+    isValidEventKey: (event: React.KeyboardEvent<HTMLElement>) => event.key === 'A',
+    label: { id: 'components.Blocks.modifiers.subscript', defaultMessage: 'Subscript' },
+    checkIsActive: (editor: Editor) => baseCheckIsActive(editor, 'subscript' as never),
+    handleToggle: (editor: Editor) => baseHandleToggle(editor, 'subscript' as never),
+    renderLeaf: (children: React.JSX.Element | string) => <SubscriptText>{children}</SubscriptText>,
   },
   bold: {
     icon: Bold,
