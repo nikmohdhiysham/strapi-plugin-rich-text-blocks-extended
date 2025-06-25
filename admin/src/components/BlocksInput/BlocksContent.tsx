@@ -306,6 +306,8 @@ const handleMoveBlocks = (editor: Editor, event: React.KeyboardEvent<HTMLElement
   return null;
 }
 
+const dragNoop = () => true;
+
 const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
   const { editor, disabled, blocks, modifiers, setLiveText, isExpandedMode } =
     useBlocksEditorContext('BlocksContent');
@@ -522,15 +524,20 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
   }, [editor, handleEnter, handleBackspaceEvent, handleTab, handleKeyboardShortcuts, checkSnippet]);
   
   const handleScrollSelectionIntoView = React.useCallback(() => {
-    if (!editor.selection || !blocksRef.current) return;
-    // Safe to access editor.selection here because of the guard above
+    if (!editor.selection || !blocksRef.current) {
+      return;
+    }
+
+    // Check if the selection is not fully within the visible area of the editor
     const domRange = ReactEditor.toDOMRange(editor as ReactEditor, editor.selection);
     const domRect = domRange.getBoundingClientRect();
+
     const editorRect = blocksRef.current.getBoundingClientRect();
+    
     if (domRect.top < editorRect.top || domRect.bottom > editorRect.bottom) {
-      blocksRef.current.scrollBy({ top: 28, behavior: 'smooth' });
+      blocksRef.current.scrollBy({ top: 28, behavior: 'smooth' }); // 20px is the line-height + 8px line gap
     }
-  }, [editor, blocksRef]); // editor object itself is stable, blocksRef is stable.
+  }, [editor]);
 
   const sortableItems = React.useMemo(() =>
     editor.children.map((_, index) => ({ id: String(index) }))
@@ -570,8 +577,8 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
             onKeyDown={handleKeyDown}
             scrollSelectionIntoView={handleScrollSelectionIntoView}
             // Let the DndContext handle drag and drop
-            onDrop={() => true}
-            onDragStart={() => true}
+            onDrop={dragNoop}
+            onDragStart={dragNoop}
           />
         </SortableContext>
       </DndContext>
