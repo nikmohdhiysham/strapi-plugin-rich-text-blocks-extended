@@ -125,7 +125,9 @@ Justify:justify
 
 The editor supports various text formatting options:
 
-- **Uppercase**: Transform selected text to uppercase using the AA button or Ctrl/Cmd+A
+- **Uppercase**: Transform selected text to uppercase using the AA button in the toolbar
+- **Superscript**: Apply using the sup button in the toolbar
+- **Subscript**: Apply using the sub button in the toolbar
 - **Bold**: Apply using the B button in the toolbar or Ctrl/Cmd+B
 - **Italic**: Apply using the I button in the toolbar or Ctrl/Cmd+I
 - **Underline**: Apply using the U button in the toolbar or Ctrl/Cmd+U

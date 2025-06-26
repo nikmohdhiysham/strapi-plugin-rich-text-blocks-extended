@@ -2,6 +2,19 @@
 
 All notable changes to the strapi-plugin-rich-text-blocks-extended plugin will be documented in this file.
 
+## [1.0.3]
+
+### Added
+
+- Uppercase text formatting modifier (AA button in toolbar)
+- Superscript text formatting modifier (sup button in toolbar)
+- Subscript text formatting modifier (sub button in toolbar)
+
+### Fixed
+
+- Improved typing experience by fixing editor lag issues
+- Optimized performance for better responsiveness during text input
+
 ## [1.0.2]
 
 ### Fixed
