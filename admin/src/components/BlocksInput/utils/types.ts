@@ -15,12 +15,22 @@ export interface FontSetting {
   fontTracking: string | null;
 }
 
+export interface SeparatorSetting {
+  breakpoint: string;
+  separatorSize: number | null;
+  separatorOrientation: 'horizontal' | 'vertical' | null;
+  separatorLength: number | null;
+}
+
 // Base element types
 export interface CustomElement extends BaseElement {
   type: string;
   fontFamily?: string;
   fontColor?: string;
   fontSettings?: FontSetting[];
+  separatorStyle?: string; 
+  separatorColor?: string;
+  separatorSettings?: SeparatorSetting[];
   [key: string]: unknown;
 }
 

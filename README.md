@@ -19,6 +19,7 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - 🔠 Text formatting options including uppercase transform
 - ✨ On-the-fly custom values for font size, line height, and letter spacing
 - 🔄 Expandable editor interface
+- ➖ Separator blocks with customizable styling
 
 ## ⚠️ Known Limitations
 
@@ -147,6 +148,22 @@ The plugin supports various block types including:
 - Images
 - Quotes
 - Code blocks
+- Separators
+
+### 🎯 Separator Block
+
+The separator block allows you to add visual dividers between content sections with the following customizable options:
+
+**Non-viewport specific settings:**
+- **Style**: Choose from solid, dashed, dotted, or double line styles
+- **Color**: Select from the available color palette
+
+**Viewport-specific settings (configurable per device breakpoint):**
+- **Size**: Control the thickness of the separator (0-100)
+- **Length**: Set the width percentage of the separator (0-100%)
+- **Orientation**: Choose between horizontal or vertical orientation
+
+These viewport-specific settings allow you to create responsive separators that adapt to different screen sizes.
 
 ## 🤝 Contributing
 

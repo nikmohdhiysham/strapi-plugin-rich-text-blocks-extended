@@ -18,6 +18,7 @@ import { linkBlocks } from './Blocks/Link';
 import { listBlocks } from './Blocks/List';
 import { paragraphBlocks } from './Blocks/Paragraph';
 import { quoteBlocks } from './Blocks/Quote';
+import { separatorBlocks } from './Blocks/Separator';
 import { BlocksContent, type BlocksContentProps } from './BlocksContent';
 import { BlocksToolbar } from './BlocksToolbar';
 import { EditorLayout } from './EditorLayout';
@@ -67,6 +68,7 @@ const selectorBlockKeys = [
   'image',
   'quote',
   'code',
+  'separator',
 ] as const;
 
 type SelectorBlockKey = (typeof selectorBlockKeys)[number];
@@ -272,6 +274,7 @@ const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
         ...imageBlocks,
         ...quoteBlocks,
         ...codeBlocks,
+        ...separatorBlocks,
       }),
       []
     ) satisfies BlocksStore;

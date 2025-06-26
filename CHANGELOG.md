@@ -2,6 +2,18 @@
 
 All notable changes to the strapi-plugin-rich-text-blocks-extended plugin will be documented in this file.
 
+## [1.1.0]
+
+### Added
+
+- Separator block type with advanced customization options
+  - Style options: solid, dashed, dotted, double
+  - Color selection from available palette
+  - Viewport-specific settings for responsive design:
+    - Size (thickness): 0-100
+    - Length (width percentage): 0-100%
+    - Orientation: horizontal/vertical
+
 ## [1.0.6]
 
 ### Added

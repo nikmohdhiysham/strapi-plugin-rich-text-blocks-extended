@@ -12,26 +12,34 @@ import {
 import { Editor, Element } from 'slate';
 import { styled } from 'styled-components';
 import { Cog } from '@strapi/icons';
-
-import { FontViewportIcon } from './FontSettingsIcons';
+import { ViewportIcon } from './AdvancedSettingsIcons';
 import { useBlocksEditorContext } from './BlocksEditor';
-import { CustomElement, FontSetting } from './utils/types';
+import { CustomElement, FontSetting, SeparatorSetting } from './utils/types';
 import DynamicSettings from './DynamicSettings';
 import {
+  // Global
+  VIEWPORT_OPTIONS,
+  COLORS_OPTIONS,
+  DEFAULT_VIEWPORT,
+  DEFAULT_COLOR,
+  // Font
   FONT_FAMILY_OPTIONS,
-  FONT_COLOR_OPTIONS,
   FONT_SIZE_OPTIONS,
   FONT_LEADING_OPTIONS,
   FONT_TRACKING_OPTIONS,
   FONT_ALIGNMENT_OPTIONS,
-  VIEWPORT_OPTIONS,
   DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_COLOR,
   DEFAULT_FONT_SIZE,
   DEFAULT_FONT_LEADING,
   DEFAULT_FONT_TRACKING,
   DEFAULT_FONT_ALIGNMENT,
-  DEFAULT_VIEWPORT
+  // Separator
+  SEPARATOR_STYLE_OPTIONS,
+  SEPARATOR_ORIENTATION_OPTIONS,
+  DEFAULT_SEPARATOR_STYLE,
+  DEFAULT_SEPARATOR_SIZE,
+  DEFAULT_SEPARATOR_LENGTH,
+  DEFAULT_SEPARATOR_ORIENTATION
 } from './utils/optionsDefaults';
 import { getOptionsWithFallback } from './utils/optionsParser';
 
@@ -145,33 +153,27 @@ const isCustomElement = (node: unknown): node is CustomElement => {
          (!('fontSettings' in node) || Array.isArray((node as any).fontSettings));
 };
 
-// Add type for node properties
-interface NodeProperties {
-  fontSettings?: FontSetting[];
-  fontFamily?: string;
-  fontColor?: string;
-  type?: string;
-}
-
 const StyleToolbar = () => {
   const { editor, disabled, pluginOptions = {} } = useBlocksEditorContext('StyleToolbar');
 
   // Get styling options based on plugin configuration
   const typedPluginOptions = pluginOptions as PluginOptions;
+   // Global Options
+   const viewportOptions = getOptionsWithFallback(
+    VIEWPORT_OPTIONS,
+    typedPluginOptions?.customViewportsPresets,
+    typedPluginOptions?.disableDefaultViewports
+  );
+  const colorOptions = getOptionsWithFallback(
+    COLORS_OPTIONS,
+    typedPluginOptions?.customColorsPresets,
+    typedPluginOptions?.disableDefaultColors
+  );
+   // Font Options
   const fontFamilyOptions = getOptionsWithFallback(
     FONT_FAMILY_OPTIONS,
     typedPluginOptions?.customFontsPresets,
     typedPluginOptions?.disableDefaultFonts
-  );
-  const fontColorOptions = getOptionsWithFallback(
-    FONT_COLOR_OPTIONS,
-    typedPluginOptions?.customColorsPresets,
-    typedPluginOptions?.disableDefaultColors
-  );
-  const viewportOptions = getOptionsWithFallback(
-    VIEWPORT_OPTIONS,
-    typedPluginOptions?.customViewportsPresets,
-    typedPluginOptions?.disableDefaultViewports
   );
   const fontSizeOptions = getOptionsWithFallback(
     FONT_SIZE_OPTIONS,
@@ -193,20 +195,31 @@ const StyleToolbar = () => {
     typedPluginOptions?.customAlignmentsPresets,
     typedPluginOptions?.disableDefaultAlignments
   );
+  // Separator Options
+  const separatorStyleOptions = SEPARATOR_STYLE_OPTIONS;
+  const separatorOrientationOptions = SEPARATOR_ORIENTATION_OPTIONS;
 
   // Get default values based on plugin configuration or fall back to system defaults
+  const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
+  const defaultColor = getDefaultValue(colorOptions, DEFAULT_COLOR);
+  // Font defaults
   const defaultFontFamily = getDefaultValue(fontFamilyOptions, DEFAULT_FONT_FAMILY);
-  const defaultFontColor = getDefaultValue(fontColorOptions, DEFAULT_FONT_COLOR);
   const defaultFontSize = getDefaultValue(fontSizeOptions, DEFAULT_FONT_SIZE);
   const defaultFontLeading = getDefaultValue(fontLeadingOptions, DEFAULT_FONT_LEADING);
   const defaultFontTracking = getDefaultValue(fontTrackingOptions, DEFAULT_FONT_TRACKING);
   const defaultFontAlignment = getDefaultValue(fontAlignmentOptions, DEFAULT_FONT_ALIGNMENT);
-  const defaultViewport = getDefaultValue(viewportOptions, DEFAULT_VIEWPORT);
+  // Separator defaults
+  const defaultSeparatorStyle = DEFAULT_SEPARATOR_STYLE;
+  const defaultSeparatorSize = DEFAULT_SEPARATOR_SIZE;
+  const defaultSeparatorLength = DEFAULT_SEPARATOR_LENGTH;
+  const defaultSeparatorOrientation = DEFAULT_SEPARATOR_ORIENTATION;
+
 
   // State for the style toolbar - only update when selection changes to a different node
   const [isOpen, setIsOpen] = useState(false);
   const [selectedViewport, setSelectedViewport] = useState(defaultViewport);
-  const [viewportSettings, setViewportSettings] = useState<Record<string, FontSetting>>({});
+  const [viewportFontSettings, setViewportFontSettings] = useState<Record<string, FontSetting>>({});
+  const [viewportSeparatorSettings, setViewportSeparatorSettings] = useState<Record<string, SeparatorSetting>>({});
 
   // Get current selected node
   const entry = editor.selection ? Editor.above(editor, {
@@ -219,11 +232,50 @@ const StyleToolbar = () => {
   // Initialize viewport settings when node changes - THIS CAN BE IMPROVED
   React.useEffect(() => {
     if (!selectedNode) {
-      setViewportSettings({});
+      setViewportFontSettings({});
+      setViewportSeparatorSettings({});
       return;
     }
 
-    if (isCustomElement(selectedNode)) {
+    if (selectedNode.type === 'separator') {
+      // Initialize separator settings
+      const element = selectedNode as any;
+      if (element.viewportSeparatorSettings) {
+        const settings: Record<string, SeparatorSetting> = {};
+        element.viewportSeparatorSettings.forEach((setting: SeparatorSetting) => {
+          settings[setting.breakpoint] = setting;
+        });
+        setViewportSeparatorSettings(settings);
+      } else {
+        // Initialize with default separator settings for each viewport
+        const defaultSettings: Record<string, SeparatorSetting> = {};
+        viewportOptions.forEach((option) => {
+          defaultSettings[option.value] = {
+            breakpoint: option.value,
+            separatorSize: option.value === viewportOptions[0].value ? defaultSeparatorSize : null,
+            separatorLength: option.value === viewportOptions[0].value ? defaultSeparatorLength : null,
+            separatorOrientation: option.value === viewportOptions[0].value ? defaultSeparatorOrientation as 'horizontal' : null,
+          };
+        });
+        setViewportSeparatorSettings(defaultSettings);
+
+        // Initialize the node with default settings
+        const properties = {
+          separatorStyle: element.separatorStyle || defaultSeparatorStyle,
+          separatorColor: element.separatorColor || defaultColor,
+          viewportSeparatorSettings: Object.values(defaultSettings)
+        } as unknown as Partial<Node>;
+
+        Editor.withoutNormalizing(editor, () => {
+          editor.apply({
+            type: 'set_node',
+            path: currentPath,
+            properties,
+            newProperties: properties
+          });
+        });
+      }
+    } else if (isCustomElement(selectedNode)) {
       // Initialize settings from node's fontSettings or create empty settings
       if (selectedNode.fontSettings) {
         const settings: Record<string, FontSetting> = {};
@@ -236,20 +288,20 @@ const StyleToolbar = () => {
             fontAlignment: setting.fontAlignment || null
           };
         });
-        setViewportSettings(settings);
+        setViewportFontSettings(settings);
       } else {
         // If no settings exist, initialize with empty settings for each viewport
         const emptySettings: Record<string, FontSetting> = {};
         viewportOptions.forEach((option) => {
           emptySettings[option.value] = getDefaultSettings(option.value);
         });
-        setViewportSettings(emptySettings);
+        setViewportFontSettings(emptySettings);
 
         // Initialize the node with default settings
         if (!['code', 'image'].includes(selectedNode.type)) {
           const properties = {
             fontFamily: selectedNode.fontFamily || defaultFontFamily,
-            fontColor: selectedNode.fontColor || defaultFontColor,
+            fontColor: selectedNode.fontColor || defaultColor,
             fontSettings: Object.values(emptySettings)
           } as unknown as Partial<Node>;
 
@@ -266,9 +318,11 @@ const StyleToolbar = () => {
     }
   }, [selectedNode?.type, currentPath.join()]);
 
-  // Get current node's font settings
+  // Get current node's font/separator settings
   const fontFamily = selectedNode?.fontFamily || defaultFontFamily;
-  const fontColor = selectedNode?.fontColor || defaultFontColor;
+  const fontColor = selectedNode?.fontColor || defaultColor;
+  const separatorStyle = selectedNode?.separatorStyle || defaultSeparatorStyle;
+  const separatorColor = selectedNode?.separatorColor || defaultColor;
 
   const getDefaultSettings = (viewport: string) => ({
     breakpoint: viewport,
@@ -288,8 +342,8 @@ const StyleToolbar = () => {
     
     const newValue = !value ? null : String(value);
     
-    // Update the viewportSettings state
-    const newSettings = { ...viewportSettings };
+    // Update the viewportFontSettings state
+    const newSettings = { ...viewportFontSettings };
     
     if (!newSettings[viewport]) {
       newSettings[viewport] = getDefaultSettings(viewport);
@@ -312,7 +366,50 @@ const StyleToolbar = () => {
       });
     });
     
-    setViewportSettings(newSettings);
+    setViewportFontSettings(newSettings);
+  };
+
+  // Update separator viewport settings
+  const updateSeparatorSetting = (
+    settingKey: 'separatorSize' | 'separatorOrientation' | 'separatorLength',
+    value: string | number | null,
+    viewport: string
+  ) => {
+    if (!selectedNode || !currentPath.length) return;
+    
+    const newValue = value === null || value === undefined ? null : 
+      (settingKey === 'separatorSize' || settingKey === 'separatorLength') ? Number(value) : String(value);
+    
+    // Update the viewportSeparatorSettings state
+    const newSettings = { ...viewportSeparatorSettings };
+    
+    if (!newSettings[viewport]) {
+      newSettings[viewport] = {
+        breakpoint: viewport,
+        separatorSize: null,
+        separatorOrientation: null,
+        separatorLength: null,
+      };
+    }
+
+    newSettings[viewport] = {
+      ...newSettings[viewport],
+      [settingKey]: newValue as any
+    };
+
+    // Update the node with all separator settings
+    const allSettings = Object.values(newSettings);
+    Editor.withoutNormalizing(editor, () => {
+      const properties = { viewportSeparatorSettings: allSettings } as unknown as Partial<Node>;
+      editor.apply({
+        type: 'set_node',
+        path: currentPath,
+        properties,
+        newProperties: properties
+      });
+    });
+    
+    setViewportSeparatorSettings(newSettings);
   };
 
   // Handle font family change
@@ -349,17 +446,19 @@ const StyleToolbar = () => {
     });
   };
 
+
   if (!selectedNode) {
     return null;
   }
 
-  const showStyleOptions = !['image', 'code'].includes(selectedNode.type) || !selectedNode?.type;
+  const showFontOptions = selectedNode?.type && !['image', 'code', 'separator'].includes(selectedNode.type);
+  const showSeparatorOptions = selectedNode?.type === 'separator';
 
   return (
     <>
       <Flex gap={2}>
         {/* Font Family Selector */}
-        {showStyleOptions && (
+        {showFontOptions && (
           <SelectWrapper>
             <SingleSelect
               placeholder="Font Family"
@@ -378,7 +477,7 @@ const StyleToolbar = () => {
         )}
 
         {/* Font Color Selector */}
-        {showStyleOptions && (
+        {showFontOptions && (
           <ColorSelectWrapper>
             <SingleSelect
               placeholder="Color"
@@ -387,7 +486,7 @@ const StyleToolbar = () => {
               disabled={disabled}
               aria-label="Select font color"
             >
-              {fontColorOptions.map((option) => (
+              {colorOptions.map((option) => (
                 <SingleSelectOption key={option.value} value={option.value}>
                   <Flex alignItems="center" pointerEvents="none">
                     <ColorSwatch color={option.value} />
@@ -399,8 +498,74 @@ const StyleToolbar = () => {
           </ColorSelectWrapper>
         )}
 
-        {/* Advanced Settings Popover (Viewport, Font Size, Leading, Alignment) */}
-        {showStyleOptions && (
+
+        {/* Separator Controls (Non-viewport specific: style and color) */}
+        {showSeparatorOptions && (
+          <>
+            {/* Separator Style */}
+            <SelectWrapper>
+              <SingleSelect
+                placeholder="Style"
+                onChange={(value) => {
+                  if (!currentPath.length) return;
+                  Editor.withoutNormalizing(editor, () => {
+                    const properties = { separatorStyle: String(value) } as unknown as Partial<Node>;
+                    editor.apply({
+                      type: 'set_node',
+                      path: currentPath,
+                      properties,
+                      newProperties: properties
+                    });
+                  });
+                }}
+                value={separatorStyle}
+                disabled={disabled}
+                aria-label="Select separator style"
+              >
+                {separatorStyleOptions.map((option) => (
+                  <SingleSelectOption key={option.value} value={option.value}>
+                    {option.label}
+                  </SingleSelectOption>
+                ))}
+              </SingleSelect>
+            </SelectWrapper>
+
+            {/* Separator Color */}
+            <ColorSelectWrapper>
+              <SingleSelect
+                placeholder="Color"
+                onChange={(value) => {
+                  if (!currentPath.length) return;
+                  Editor.withoutNormalizing(editor, () => {
+                    const properties = { separatorColor: String(value) } as unknown as Partial<Node>;
+                    editor.apply({
+                      type: 'set_node',
+                      path: currentPath,
+                      properties,
+                      newProperties: properties
+                    });
+                  });
+                }}
+                value={separatorColor}
+                disabled={disabled}
+                aria-label="Select separator color"
+              >
+                {colorOptions.map((option) => (
+                  <SingleSelectOption key={option.value} value={option.value}>
+                    <Flex alignItems="center" pointerEvents="none">
+                      <ColorSwatch color={option.value} />
+                      <span>{option.label}</span>
+                    </Flex>
+                  </SingleSelectOption>
+                ))}
+              </SingleSelect>
+            </ColorSelectWrapper>
+
+          </>
+        )}
+
+        {/* Advanced Settings Popover (Viewport settings) */}
+        {(showFontOptions || showSeparatorOptions) && (
           <Popover.Root open={isOpen} onOpenChange={(open) => {
             setIsOpen(open);
 
@@ -410,7 +575,7 @@ const StyleToolbar = () => {
             }
           }}>
             <Popover.Trigger>
-              <IconButton label="Advanced text settings" variant='ghost'>
+              <IconButton label="Advanced settings" variant='ghost'>
                 <Cog />
               </IconButton>
             </Popover.Trigger>
@@ -420,7 +585,7 @@ const StyleToolbar = () => {
                 <SettingGroup width="100%">
                   <Tooltip label="Viewport">
                     <SettingIcon>
-                      <FontViewportIcon />
+                      <ViewportIcon />
                     </SettingIcon>
                   </Tooltip>
                   <SelectWrapper flex="1">
@@ -441,26 +606,42 @@ const StyleToolbar = () => {
                   </SelectWrapper>
                 </SettingGroup>
 
-              {Object.keys(viewportSettings).map((setting) => (
-                <DynamicSettings
-                  key={`${setting}-settings`}
-                  isActive={selectedViewport === setting}
-                  settings={viewportSettings[setting]}
-                  onSettingChange={updateViewportSetting}
-                  disabled={disabled}
-                  fontSizeOptions={fontSizeOptions}
-                  fontLeadingOptions={fontLeadingOptions}
-                  fontTrackingOptions={fontTrackingOptions}
-                  fontAlignmentOptions={fontAlignmentOptions}
-                />
-              ))}
+              {showSeparatorOptions ? (
+                // Render separator settings
+                Object.keys(viewportSeparatorSettings).map((setting) => (
+                  <DynamicSettings
+                    key={`${setting}-separator-settings`}
+                    isActive={selectedViewport === setting}
+                    settings={viewportSeparatorSettings[setting] as any}
+                    onSettingChange={updateSeparatorSetting as any}
+                    disabled={disabled}
+                    isSeparator
+                    separatorOrientationOptions={separatorOrientationOptions}
+                  />
+                ))
+              ) : (
+                // Render font settings
+                Object.keys(viewportFontSettings).map((setting) => (
+                  <DynamicSettings
+                    key={`${setting}-settings`}
+                    isActive={selectedViewport === setting}
+                    settings={viewportFontSettings[setting]}
+                    onSettingChange={updateViewportSetting as any}
+                    disabled={disabled}
+                    fontSizeOptions={fontSizeOptions}
+                    fontLeadingOptions={fontLeadingOptions}
+                    fontTrackingOptions={fontTrackingOptions}
+                    fontAlignmentOptions={fontAlignmentOptions}
+                  />
+                ))
+              )}
               </Flex>
             </Popover.Content>
           </Popover.Root>
         )}
       </Flex>
 
-      {showStyleOptions && (
+      {(showFontOptions || showSeparatorOptions) && (
         <ToolbarSeparator />
       )}
     </>

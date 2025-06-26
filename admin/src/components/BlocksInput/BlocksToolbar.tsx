@@ -590,7 +590,7 @@ const BlocksToolbar = () => {
 
     const selectedNode = editor.children[editor.selection.anchor.path[0]] as CustomElement;
     if (!selectedNode) return true;
-    if (['image', 'code'].includes(selectedNode.type)) {
+    if (['image', 'code', 'separator'].includes(selectedNode.type)) {
       return true;
     }
 

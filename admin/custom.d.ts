@@ -31,6 +31,16 @@ interface BrowserStrapi {
   telemetryDisabled: boolean;
 }
 
+declare module '@strapi/types' {
+  namespace Schema {
+    namespace Attribute {
+      type BlocksNode = Schema.Attribute.BlocksNode | {
+        type: 'separator';
+      }
+    }
+  }
+}
+
 declare global {
   interface Window {
     strapi: BrowserStrapi;

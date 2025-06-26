@@ -1,25 +1,55 @@
-import React, { useState } from 'react';
-import { Box, Flex, SingleSelect, SingleSelectOption, Tooltip, Combobox, ComboboxOption } from '@strapi/design-system';
+import { useState } from 'react';
+import {
+  Box,
+  Flex,
+  SingleSelect,
+  SingleSelectOption,
+  Tooltip,
+  Combobox,
+  ComboboxOption,
+  NumberInput,
+} from '@strapi/design-system';
 import { styled } from 'styled-components';
-import { FontSizeIcon, FontLeadingIcon, FontAlignmentIcon, FontTrackingIcon } from './FontSettingsIcons';
-import { Option, FontSetting } from './utils/types';
+import {
+  FontSizeIcon,
+  FontLeadingIcon,
+  FontAlignmentIcon,
+  FontTrackingIcon,
+  SeparatorSizeIcon,
+  SeparatorLengthIcon,
+  SeparatorOrientationIcon,
+} from './AdvancedSettingsIcons';
+import { Option, FontSetting, SeparatorSetting } from './utils/types';
 
 export interface DynamicSettingsProps {
   isActive: boolean;
-  settings: FontSetting;
-  onSettingChange: (key: 'fontSize' | 'fontLeading' | 'fontAlignment' | 'fontTracking', value: string | number, viewport: string) => void;
+  settings: FontSetting | SeparatorSetting;
+  onSettingChange: (
+    key:
+      | 'fontSize'
+      | 'fontLeading'
+      | 'fontAlignment'
+      | 'fontTracking'
+      | 'separatorSize'
+      | 'separatorOrientation'
+      | 'separatorLength',
+    value: string | number | null,
+    viewport: string
+  ) => void;
   disabled?: boolean;
-  fontSizeOptions: Option[];
-  fontLeadingOptions: Option[];
-  fontTrackingOptions: Option[];
-  fontAlignmentOptions: Option[];
+  fontSizeOptions?: Option[];
+  fontLeadingOptions?: Option[];
+  fontTrackingOptions?: Option[];
+  fontAlignmentOptions?: Option[];
+  isSeparator?: boolean;
+  separatorOrientationOptions?: Option[];
 }
 
 const SettingGroup = styled(Flex)`
   align-items: center;
   margin-bottom: 12px;
   justify-content: flex-start;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -67,26 +97,43 @@ const SelectWrapper = styled(Box)`
 `;
 
 const ViewportSettings = styled(Box)<{ $isActive: boolean }>`
-  display: ${({ $isActive }) => $isActive ? 'block' : 'none'};
+  width: 100%;
+  display: ${({ $isActive }) => ($isActive ? 'block' : 'none')};
 `;
 
-const getInitialOptions = (value: string | null, initialOptions: Option[]) : Option[] => {
-  if (!value || initialOptions.find((option) => option.value === value)) { return initialOptions }
+const getInitialOptions = (value: string | null, initialOptions: Option[]): Option[] => {
+  if (!value || initialOptions.find((option) => option.value === value)) {
+    return initialOptions;
+  }
 
   return [{ value, label: value }, ...initialOptions];
 };
 
-const DynamicSettings = ({ 
+const DynamicSettings = ({
   isActive,
   settings,
-  onSettingChange, 
+  onSettingChange,
   disabled,
-  fontSizeOptions: defaultFontSizeOptions,
-  fontLeadingOptions: defaultFontLeadingOptions,
-  fontTrackingOptions: defaultFontTrackingOptions,
-  fontAlignmentOptions,
+  fontSizeOptions: defaultFontSizeOptions = [],
+  fontLeadingOptions: defaultFontLeadingOptions = [],
+  fontTrackingOptions: defaultFontTrackingOptions = [],
+  fontAlignmentOptions = [],
+  isSeparator = false,
+  separatorOrientationOptions = [],
 }: DynamicSettingsProps) => {
-  const { breakpoint, fontSize, fontLeading, fontAlignment, fontTracking } = settings;
+  const { breakpoint } = settings;
+
+  // Font settings
+  const fontSize = 'fontSize' in settings ? settings.fontSize : null;
+  const fontLeading = 'fontLeading' in settings ? settings.fontLeading : null;
+  const fontAlignment = 'fontAlignment' in settings ? settings.fontAlignment : null;
+  const fontTracking = 'fontTracking' in settings ? settings.fontTracking : null;
+
+  // Separator settings
+  const separatorSize = 'separatorSize' in settings ? settings.separatorSize : null;
+  const separatorOrientation =
+    'separatorOrientation' in settings ? settings.separatorOrientation : null;
+  const separatorLength = 'separatorLength' in settings ? settings.separatorLength : null;
   const initialFontSizeOptions = getInitialOptions(fontSize, defaultFontSizeOptions);
   const initialFontLeadingOptions = getInitialOptions(fontLeading, defaultFontLeadingOptions);
   const initialFontTrackingOptions = getInitialOptions(fontTracking, defaultFontTrackingOptions);
@@ -103,6 +150,85 @@ const DynamicSettings = ({
     return !!value && regex.test(value) && (allowNegative ? true : Number(value) > 0);
   };
 
+  if (isSeparator) {
+    return (
+      <ViewportSettings $isActive={isActive}>
+        {/* Separator Size Setting */}
+        <SettingGroup width="100%">
+          <Tooltip label="Separator Size">
+            <SettingIcon>
+              <SeparatorSizeIcon />
+            </SettingIcon>
+          </Tooltip>
+          <Box flex="1">
+            <NumberInput
+              placeholder="Size"
+              name="separatorSize"
+              onValueChange={(value) => onSettingChange('separatorSize', value ?? null, breakpoint)}
+              value={separatorSize || undefined}
+              disabled={disabled}
+              aria-label="Set separator size"
+              size="M"
+              min={0}
+              max={100}
+              step={1}
+            />
+          </Box>
+        </SettingGroup>
+
+        {/* Separator Length Setting */}
+        <SettingGroup width="100%">
+          <Tooltip label="Separator Length">
+            <SettingIcon>
+              <SeparatorLengthIcon />
+            </SettingIcon>
+          </Tooltip>
+          <Box flex="1">
+            <NumberInput
+              placeholder="Length"
+              name="separatorLength"
+              onValueChange={(value) =>
+                onSettingChange('separatorLength', value ?? null, breakpoint)
+              }
+              value={separatorLength || undefined}
+              disabled={disabled}
+              aria-label="Set separator length"
+              size="M"
+              min={0}
+              max={100}
+              step={1}
+            />
+          </Box>
+        </SettingGroup>
+
+        {/* Separator Orientation Setting */}
+        <SettingGroup width="100%">
+          <Tooltip label="Separator Orientation">
+            <SettingIcon>
+              <SeparatorOrientationIcon />
+            </SettingIcon>
+          </Tooltip>
+          <SelectWrapper flex="1">
+            <SingleSelect
+              placeholder="Orientation"
+              onChange={(value) => onSettingChange('separatorOrientation', value, breakpoint)}
+              value={separatorOrientation || ''}
+              disabled={disabled}
+              aria-label="Select separator orientation"
+              size="S"
+            >
+              {separatorOrientationOptions.map((option) => (
+                <SingleSelectOption key={option.value} value={option.value}>
+                  {option.label}
+                </SingleSelectOption>
+              ))}
+            </SingleSelect>
+          </SelectWrapper>
+        </SettingGroup>
+      </ViewportSettings>
+    );
+  }
+
   return (
     <ViewportSettings $isActive={isActive}>
       <SettingGroup width="100%">
@@ -113,8 +239,8 @@ const DynamicSettings = ({
         </Tooltip>
         <SelectWrapper flex="1">
           <Combobox
-            autoComplete='off'
-            autocomplete={{ type: "none" }}
+            autoComplete="off"
+            autocomplete={{ type: 'none' }}
             placeholder="Font Size"
             aria-label="Select or create font size"
             value={fontSize || ''}
@@ -149,8 +275,8 @@ const DynamicSettings = ({
         </Tooltip>
         <SelectWrapper flex="1">
           <Combobox
-            autoComplete='off'
-            autocomplete={{ type: "none" }}
+            autoComplete="off"
+            autocomplete={{ type: 'none' }}
             placeholder="Line Height"
             aria-label="Select or set line height"
             value={fontLeading || ''}
@@ -185,8 +311,8 @@ const DynamicSettings = ({
         </Tooltip>
         <SelectWrapper flex="1">
           <Combobox
-            autoComplete='off'
-            autocomplete={{ type: "none" }}
+            autoComplete="off"
+            autocomplete={{ type: 'none' }}
             placeholder="Letter Spacing"
             aria-label="Select or set letter spacing"
             value={fontTracking || ''}
@@ -240,4 +366,4 @@ const DynamicSettings = ({
   );
 };
 
-export default DynamicSettings; 
+export default DynamicSettings;

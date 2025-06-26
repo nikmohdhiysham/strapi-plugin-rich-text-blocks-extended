@@ -1,16 +1,6 @@
 import { Option } from './types';
 
-// Font Family Options
-export const FONT_FAMILY_OPTIONS: Option[] = [
-  { label: 'Arial', value: 'arial' },
-  { label: 'Open Sans', value: 'open-sans' },
-  { label: 'Times New Roman', value: 'times-new-roman' },
-  { label: 'Georgia', value: 'georgia' }
-];
-
-// Font Color Options
-export const FONT_COLOR_OPTIONS: Option[] = [
-  // Neutrals
+export const COLORS_OPTIONS = [
   { label: 'Black', value: '#000000' },
   { label: 'White', value: '#FFFFFF' },
   { label: 'Gray', value: '#808080' },
@@ -54,6 +44,13 @@ export const FONT_COLOR_OPTIONS: Option[] = [
   { label: 'Dark Brown', value: '#A52A2A' },
 ];
 
+// Font Family Options
+export const FONT_FAMILY_OPTIONS: Option[] = [
+  { label: 'Arial', value: 'arial' },
+  { label: 'Open Sans', value: 'open-sans' },
+  { label: 'Times New Roman', value: 'times-new-roman' },
+  { label: 'Georgia', value: 'georgia' }
+];
 
 // Font Size Options
 export const FONT_SIZE_OPTIONS: Option[] = [
@@ -129,11 +126,34 @@ export const VIEWPORT_OPTIONS: Option[] = [
   { label: 'Desktop', value: 'desktop' }
 ];
 
-// Default values (first item in each options array)
+
+// Separator Style Options
+export const SEPARATOR_STYLE_OPTIONS: Option[] = [
+  { label: 'Solid', value: 'solid', isDefault: true },
+  { label: 'Dashed', value: 'dashed' },
+  { label: 'Dotted', value: 'dotted' },
+  { label: 'Double', value: 'double' },
+];
+
+// Separator Orientation Options
+export const SEPARATOR_ORIENTATION_OPTIONS: Option[] = [
+  { label: 'Horizontal', value: 'horizontal', isDefault: true },
+  { label: 'Vertical', value: 'vertical' },
+];
+
+// Default global values
+export const DEFAULT_COLOR = COLORS_OPTIONS[0].value;
+
+// Default fonts values
 export const DEFAULT_FONT_FAMILY = FONT_FAMILY_OPTIONS[0].value;
-export const DEFAULT_FONT_COLOR = FONT_COLOR_OPTIONS[0].value;
 export const DEFAULT_FONT_SIZE = FONT_SIZE_OPTIONS[0].value;
 export const DEFAULT_FONT_LEADING = FONT_LEADING_OPTIONS[0].value;
 export const DEFAULT_FONT_ALIGNMENT = FONT_ALIGNMENT_OPTIONS[0].value;
 export const DEFAULT_FONT_TRACKING = FONT_TRACKING_OPTIONS[6].value;
-export const DEFAULT_VIEWPORT = VIEWPORT_OPTIONS[0].value; 
+export const DEFAULT_VIEWPORT = VIEWPORT_OPTIONS[0].value;
+
+// Default separator values
+export const DEFAULT_SEPARATOR_SIZE = 1;
+export const DEFAULT_SEPARATOR_STYLE = SEPARATOR_STYLE_OPTIONS[0].value;
+export const DEFAULT_SEPARATOR_ORIENTATION = SEPARATOR_ORIENTATION_OPTIONS[0].value;
+export const DEFAULT_SEPARATOR_LENGTH = 100;
