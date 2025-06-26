@@ -2,7 +2,7 @@
 
 All notable changes to the strapi-plugin-rich-text-blocks-extended plugin will be documented in this file.
 
-## [1.0.3]
+## [1.0.6]
 
 ### Added
 
@@ -15,7 +15,7 @@ All notable changes to the strapi-plugin-rich-text-blocks-extended plugin will b
 - Improved typing experience by fixing editor lag issues
 - Optimized performance for better responsiveness during text input
 
-## [1.0.2]
+## [1.0.2] - [1.0.5]
 
 ### Fixed
 
