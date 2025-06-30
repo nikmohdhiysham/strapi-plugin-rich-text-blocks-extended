@@ -14,7 +14,7 @@ import { styled } from 'styled-components';
 import { Cog } from '@strapi/icons';
 import { ViewportIcon } from './AdvancedSettingsIcons';
 import { useBlocksEditorContext } from './BlocksEditor';
-import { CustomElement, FontSetting, SeparatorSetting } from './utils/types';
+import { CustomElement, FontSetting, SeparatorSetting, ImageSetting, ImageElement } from './utils/types';
 import DynamicSettings from './DynamicSettings';
 import {
   // Global
@@ -221,6 +221,7 @@ const StyleToolbar = () => {
   const [selectedViewport, setSelectedViewport] = useState(defaultViewport);
   const [fontSettings, setFontSettings] = useState<Record<string, FontSetting>>({});
   const [separatorSettings, setSeparatorSettings] = useState<Record<string, SeparatorSetting>>({});
+  const [imageSettings, setImageSettings] = useState<Record<string, ImageSetting>>({});
 
   // Get current selected node
   const entry = editor.selection
@@ -237,6 +238,7 @@ const StyleToolbar = () => {
     if (!selectedNode) {
       setFontSettings({});
       setSeparatorSettings({});
+      setImageSettings({});
       return;
     }
 
@@ -321,6 +323,53 @@ const StyleToolbar = () => {
             });
           });
         }
+      }
+    }
+
+    if (selectedNode.type === 'image') {
+      // Initialize image settings
+      const imageElement = selectedNode as ImageElement;
+      const intrinsicWidth = imageElement.image?.width;
+      const intrinsicHeight = imageElement.image?.height;
+      
+      if (selectedNode.imageSettings) {
+        const settings: Record<string, ImageSetting> = {};
+        selectedNode.imageSettings.forEach((setting: ImageSetting) => {
+          settings[setting.breakpoint] = {
+            breakpoint: setting.breakpoint,
+            imageWidth: setting.imageWidth || null,
+            imageHeight: setting.imageHeight || null,
+            imageAspectRatioLocked: setting.imageAspectRatioLocked !== undefined ? setting.imageAspectRatioLocked : true,
+          };
+        });
+        setImageSettings(settings);
+      } else {
+        // If no settings exist, initialize with intrinsic dimensions for mobile
+        const emptySettings: Record<string, ImageSetting> = {};
+        viewportOptions.forEach((option) => {
+          emptySettings[option.value] = {
+            breakpoint: option.value,
+            // Use intrinsic dimensions as defaults for mobile viewport
+            imageWidth: option.value === 'mobile' && intrinsicWidth ? intrinsicWidth.toString() : null,
+            imageHeight: option.value === 'mobile' && intrinsicHeight ? intrinsicHeight.toString() : null,
+            imageAspectRatioLocked: true, // Default to locked aspect ratio
+          };
+        });
+        setImageSettings(emptySettings);
+
+        // Initialize the node with settings including intrinsic dimensions for mobile
+        const properties = {
+          imageSettings: Object.values(emptySettings),
+        } as unknown as Partial<Node>;
+
+        Editor.withoutNormalizing(editor, () => {
+          editor.apply({
+            type: 'set_node',
+            path: currentPath,
+            properties,
+            newProperties: properties,
+          });
+        });
       }
     }
   }, [selectedNode?.type, currentPath.join()]);
@@ -423,6 +472,83 @@ const StyleToolbar = () => {
     setSeparatorSettings(newSettings);
   };
 
+  // Update image viewport settings
+  const updateImageSetting = (
+    settingKey: 'imageWidth' | 'imageHeight' | 'imageAspectRatioLocked',
+    value: string | boolean | null,
+    viewport: string
+  ) => {
+    if (!selectedNode || !currentPath.length) return;
+
+    const newSettings = { ...imageSettings };
+    const imageElement = selectedNode as ImageElement;
+    const intrinsicWidth = imageElement.image?.width;
+    const intrinsicHeight = imageElement.image?.height;
+
+    if (!newSettings[viewport]) {
+      newSettings[viewport] = {
+        breakpoint: viewport,
+        imageWidth: null,
+        imageHeight: null,
+        imageAspectRatioLocked: true,
+      };
+    }
+
+    // Handle aspect ratio toggle
+    if (settingKey === 'imageAspectRatioLocked') {
+      newSettings[viewport] = {
+        ...newSettings[viewport],
+        imageAspectRatioLocked: value as boolean,
+      };
+    } else {
+      // Handle width/height changes with aspect ratio preservation
+      const currentSettings = newSettings[viewport];
+      const isLocked = currentSettings.imageAspectRatioLocked !== false; // Default to true
+      
+      if (isLocked && intrinsicWidth && intrinsicHeight && value !== null) {
+        const aspectRatio = intrinsicWidth / intrinsicHeight;
+        
+        if (settingKey === 'imageWidth') {
+          const newWidth = parseInt(value as string);
+          const newHeight = Math.round(newWidth / aspectRatio);
+          newSettings[viewport] = {
+            ...currentSettings,
+            imageWidth: value as string,
+            imageHeight: newHeight.toString(),
+          };
+        } else if (settingKey === 'imageHeight') {
+          const newHeight = parseInt(value as string);
+          const newWidth = Math.round(newHeight * aspectRatio);
+          newSettings[viewport] = {
+            ...currentSettings,
+            imageWidth: newWidth.toString(),
+            imageHeight: value as string,
+          };
+        }
+      } else {
+        // Just update the single value if not locked or no intrinsic dimensions
+        newSettings[viewport] = {
+          ...newSettings[viewport],
+          [settingKey]: value,
+        };
+      }
+    }
+
+    // Update the node with all image settings
+    const allSettings = Object.values(newSettings);
+    Editor.withoutNormalizing(editor, () => {
+      const properties = { imageSettings: allSettings } as unknown as Partial<Node>;
+      editor.apply({
+        type: 'set_node',
+        path: currentPath,
+        properties,
+        newProperties: properties,
+      });
+    });
+
+    setImageSettings(newSettings);
+  };
+
   // Handle font family change
   const handleFontFamilyChange = (value: string | number) => {
     if (!selectedNode || !currentPath.length) return;
@@ -464,6 +590,7 @@ const StyleToolbar = () => {
   const showFontOptions =
     selectedNode?.type && !['image', 'code', 'separator'].includes(selectedNode.type);
   const showSeparatorOptions = selectedNode?.type === 'separator';
+  const showImageOptions = selectedNode?.type === 'image';
 
   return (
     <>
@@ -578,7 +705,7 @@ const StyleToolbar = () => {
         )}
 
         {/* Advanced Settings Popover (Viewport settings) */}
-        {(showFontOptions || showSeparatorOptions) && (
+        {(showFontOptions || showSeparatorOptions || showImageOptions) && (
           <Popover.Root
             open={isOpen}
             onOpenChange={(open) => {
@@ -622,40 +749,52 @@ const StyleToolbar = () => {
                   </SelectWrapper>
                 </SettingGroup>
 
-                {showSeparatorOptions
-                  ? // Render separator settings
-                    Object.keys(separatorSettings).map((setting) => (
+                {showImageOptions
+                  ? // Render image settings
+                    Object.keys(imageSettings).map((setting) => (
                       <DynamicSettings
-                        key={`${setting}-separator-settings`}
+                        key={`${setting}-image-settings`}
                         isActive={selectedViewport === setting}
-                        settings={separatorSettings[setting] as any}
-                        onSettingChange={updateSeparatorSetting as any}
+                        settings={imageSettings[setting] as any}
+                        onSettingChange={updateImageSetting as any}
                         disabled={disabled}
-                        isSeparator
-                        separatorOrientationOptions={separatorOrientationOptions}
+                        isImage
                       />
                     ))
-                  : // Render font settings
-                    Object.keys(fontSettings).map((setting) => (
-                      <DynamicSettings
-                        key={`${setting}-settings`}
-                        isActive={selectedViewport === setting}
-                        settings={fontSettings[setting]}
-                        onSettingChange={updateViewportSetting as any}
-                        disabled={disabled}
-                        fontSizeOptions={fontSizeOptions}
-                        fontLeadingOptions={fontLeadingOptions}
-                        fontTrackingOptions={fontTrackingOptions}
-                        fontAlignmentOptions={fontAlignmentOptions}
-                      />
-                    ))}
+                  : showSeparatorOptions
+                    ? // Render separator settings
+                      Object.keys(separatorSettings).map((setting) => (
+                        <DynamicSettings
+                          key={`${setting}-separator-settings`}
+                          isActive={selectedViewport === setting}
+                          settings={separatorSettings[setting] as any}
+                          onSettingChange={updateSeparatorSetting as any}
+                          disabled={disabled}
+                          isSeparator
+                          separatorOrientationOptions={separatorOrientationOptions}
+                        />
+                      ))
+                    : // Render font settings
+                      Object.keys(fontSettings).map((setting) => (
+                        <DynamicSettings
+                          key={`${setting}-settings`}
+                          isActive={selectedViewport === setting}
+                          settings={fontSettings[setting]}
+                          onSettingChange={updateViewportSetting as any}
+                          disabled={disabled}
+                          fontSizeOptions={fontSizeOptions}
+                          fontLeadingOptions={fontLeadingOptions}
+                          fontTrackingOptions={fontTrackingOptions}
+                          fontAlignmentOptions={fontAlignmentOptions}
+                        />
+                      ))}
               </Flex>
             </Popover.Content>
           </Popover.Root>
         )}
       </Flex>
 
-      {(showFontOptions || showSeparatorOptions) && <ToolbarSeparator />}
+      {(showFontOptions || showSeparatorOptions || showImageOptions) && <ToolbarSeparator />}
     </>
   );
 };

@@ -8,7 +8,9 @@ import {
   Combobox,
   ComboboxOption,
   NumberInput,
+  IconButton,
 } from '@strapi/design-system';
+import { Link } from '@strapi/icons';
 import { styled } from 'styled-components';
 import {
   FontSizeIcon,
@@ -19,11 +21,11 @@ import {
   SeparatorLengthIcon,
   SeparatorOrientationIcon,
 } from './AdvancedSettingsIcons';
-import { Option, FontSetting, SeparatorSetting } from './utils/types';
+import { Option, FontSetting, SeparatorSetting, ImageSetting } from './utils/types';
 
 export interface DynamicSettingsProps {
   isActive: boolean;
-  settings: FontSetting | SeparatorSetting;
+  settings: FontSetting | SeparatorSetting | ImageSetting;
   onSettingChange: (
     key:
       | 'fontSize'
@@ -32,8 +34,11 @@ export interface DynamicSettingsProps {
       | 'fontTracking'
       | 'separatorSize'
       | 'separatorOrientation'
-      | 'separatorLength',
-    value: string | number | null,
+      | 'separatorLength'
+      | 'imageWidth'
+      | 'imageHeight'
+      | 'imageAspectRatioLocked',
+    value: string | number | boolean | null,
     viewport: string
   ) => void;
   disabled?: boolean;
@@ -42,6 +47,7 @@ export interface DynamicSettingsProps {
   fontTrackingOptions?: Option[];
   fontAlignmentOptions?: Option[];
   isSeparator?: boolean;
+  isImage?: boolean;
   separatorOrientationOptions?: Option[];
 }
 
@@ -119,6 +125,7 @@ const DynamicSettings = ({
   fontTrackingOptions: defaultFontTrackingOptions = [],
   fontAlignmentOptions = [],
   isSeparator = false,
+  isImage = false,
   separatorOrientationOptions = [],
 }: DynamicSettingsProps) => {
   const { breakpoint } = settings;
@@ -134,6 +141,12 @@ const DynamicSettings = ({
   const separatorOrientation =
     'separatorOrientation' in settings ? settings.separatorOrientation : null;
   const separatorLength = 'separatorLength' in settings ? settings.separatorLength : null;
+
+  // Image settings
+  const imageWidth = 'imageWidth' in settings ? settings.imageWidth : null;
+  const imageHeight = 'imageHeight' in settings ? settings.imageHeight : null;
+  const imageAspectRatioLocked =
+    'imageAspectRatioLocked' in settings ? settings.imageAspectRatioLocked : true;
   const initialFontSizeOptions = getInitialOptions(fontSize, defaultFontSizeOptions);
   const initialFontLeadingOptions = getInitialOptions(fontLeading, defaultFontLeadingOptions);
   const initialFontTrackingOptions = getInitialOptions(fontTracking, defaultFontTrackingOptions);
@@ -149,6 +162,95 @@ const DynamicSettings = ({
     const regex = allowNegative ? /^-?\d*\.?\d+$/ : /^\d*\.?\d+$/;
     return !!value && regex.test(value) && (allowNegative ? true : Number(value) > 0);
   };
+
+  if (isImage) {
+    return (
+      <ViewportSettings $isActive={isActive}>
+        <Flex gap={2} width="100%">
+          {/* Width and Height in a column */}
+          <Flex direction="column" gap={2} flex="1">
+            {/* Width Setting */}
+            <SettingGroup width="100%">
+              <Tooltip label="Width">
+                <SettingIcon>
+                  <Box fontWeight="bold" fontSize="18px">
+                    W
+                  </Box>
+                </SettingIcon>
+              </Tooltip>
+              <Box flex="1">
+                <NumberInput
+                  placeholder="Width"
+                  name="width"
+                  onValueChange={(value) =>
+                    onSettingChange(
+                      'imageWidth',
+                      value !== undefined ? value.toString() : null,
+                      breakpoint
+                    )
+                  }
+                  value={imageWidth ? parseInt(imageWidth) : undefined}
+                  disabled={disabled}
+                  aria-label="Set image width"
+                  size="M"
+                  min={0}
+                  step={1}
+                />
+              </Box>
+            </SettingGroup>
+
+            {/* Height Setting */}
+            <SettingGroup width="100%">
+              <Tooltip label="Height">
+                <SettingIcon>
+                  <Box fontWeight="bold" fontSize="18px">
+                    H
+                  </Box>
+                </SettingIcon>
+              </Tooltip>
+              <Box flex="1">
+                <NumberInput
+                  placeholder="Height"
+                  name="height"
+                  onValueChange={(value) =>
+                    onSettingChange(
+                      'imageHeight',
+                      value !== undefined ? value.toString() : null,
+                      breakpoint
+                    )
+                  }
+                  value={imageHeight ? parseInt(imageHeight) : undefined}
+                  disabled={disabled}
+                  aria-label="Set image height"
+                  size="M"
+                  min={0}
+                  step={1}
+                />
+              </Box>
+            </SettingGroup>
+          </Flex>
+
+          {/* Aspect Ratio Lock Toggle in the same row */}
+          <Flex alignItems="center">
+            <Tooltip
+              label={imageAspectRatioLocked ? 'Aspect ratio locked' : 'Aspect ratio unlocked'}
+            >
+              <IconButton
+                onClick={() =>
+                  onSettingChange('imageAspectRatioLocked', !imageAspectRatioLocked, breakpoint)
+                }
+                label={imageAspectRatioLocked ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
+                disabled={disabled}
+                variant={imageAspectRatioLocked ? 'secondary' : 'ghost'}
+              >
+                <Link />
+              </IconButton>
+            </Tooltip>
+          </Flex>
+        </Flex>
+      </ViewportSettings>
+    );
+  }
 
   if (isSeparator) {
     return (

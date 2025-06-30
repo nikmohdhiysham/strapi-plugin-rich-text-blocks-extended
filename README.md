@@ -20,6 +20,7 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - ✨ On-the-fly custom values for font size, line height, and letter spacing
 - 🔄 Expandable editor interface
 - ➖ Separator blocks with customizable styling
+- 📐 Viewport-specific image dimensions with aspect ratio locking
 
 ## 🖼️ Image Block Support
 
@@ -29,8 +30,28 @@ The image block is now fully functional! Thanks to the integration with `strapi-
 - Upload new images directly from the editor
 - Organize images in folders
 - Full media library functionality within the rich text editor
+- **Viewport-specific image dimensions**: Set custom width and height for each breakpoint
+- **Aspect ratio locking**: Maintain proportional dimensions when resizing images
 
-**Note**: The `strapi-plugin-media-extended` plugin is used for image block functionality.
+### Image Settings
+
+The image block includes advanced viewport-specific settings:
+
+**Viewport-specific settings (configurable per device breakpoint):**
+
+- **Image Width**: Set custom width for images at different viewports
+- **Image Height**: Set custom height for images at different viewports
+- **Aspect Ratio Lock**: Toggle to maintain proportional dimensions when adjusting width or height
+  - When locked, changing width automatically adjusts height proportionally (and vice versa)
+  - Uses the image's intrinsic dimensions to calculate the aspect ratio
+  - Default state is locked to preserve image proportions
+
+**Default behavior:**
+- Mobile viewport automatically uses the image's intrinsic dimensions as defaults
+- Other viewports start with no explicit dimensions (allowing responsive behavior)
+- Aspect ratio is locked by default to prevent image distortion
+
+**Note**: The `strapi-plugin-media-extended` plugin is required for image block functionality.
 
 ## ⚙️ Installation
 

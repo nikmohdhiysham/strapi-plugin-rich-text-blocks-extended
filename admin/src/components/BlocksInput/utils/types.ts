@@ -22,15 +22,23 @@ export interface SeparatorSetting {
   separatorLength: number | null;
 }
 
+export interface ImageSetting {
+  breakpoint: string;
+  imageWidth: string | null;
+  imageHeight: string | null;
+  imageAspectRatioLocked?: boolean;
+}
+
 // Base element types
 export interface CustomElement extends BaseElement {
   type: string;
   fontFamily?: string;
   fontColor?: string;
   fontSettings?: FontSetting[];
-  separatorStyle?: string; 
+  separatorStyle?: string;
   separatorColor?: string;
   separatorSettings?: SeparatorSetting[];
+  imageSettings?: ImageSetting[];
   [key: string]: unknown;
 }
 
@@ -73,6 +81,7 @@ export interface ImageElement extends CustomElement {
     size?: number;
     previewUrl?: string;
   };
+  imageSettings?: ImageSetting[];
   children: CustomText[];
 }
 
@@ -82,8 +91,7 @@ export type Block<T extends string> = Extract<Node, { type: T }>;
 export const getEntries = <T extends object>(object: T) =>
   Object.entries(object) as [keyof T, T[keyof T]][];
 
-export const getKeys = <T extends object>(object: T) => 
-  Object.keys(object) as (keyof T)[];
+export const getKeys = <T extends object>(object: T) => Object.keys(object) as (keyof T)[];
 
 export const isLinkNode = (element: CustomElement): element is LinkNode => {
   return element.type === 'link';
