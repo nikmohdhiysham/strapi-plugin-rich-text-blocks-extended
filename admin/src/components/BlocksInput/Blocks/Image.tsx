@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import { useStrapiApp } from '@strapi/admin/strapi-admin';
 import { Box, Flex, FlexComponent } from '@strapi/design-system';
 import { Image as Picture } from '@strapi/icons';
 import { type Element, Transforms, Editor } from 'slate';
@@ -11,6 +10,7 @@ import { prefixFileUrlWithBackendUrl } from '../utils/prefixFileUrlWithBackendUr
 import { useBlocksEditorContext, type BlocksStore } from '../BlocksEditor';
 import { CustomElement, ImageElement, type Block } from '../utils/types';
 
+import { MediaLibraryDialog } from 'strapi-plugin-media-extended/strapi-admin';
 
 import type { Schema } from '@strapi/types';
 
@@ -57,7 +57,7 @@ const pick = <T extends object, K extends keyof T>(object: T, keys: K[]): Pick<T
 };
 
 // Type guard to force TypeScript to narrow the type of the element in Blocks component
-const isImage = (element: Element): element is ImageElement => {
+const isImage = (element: Element): element is Block<'image'> => {
   return 'type' in element && element.type === 'image';
 };
 
@@ -69,8 +69,7 @@ const Image = ({ attributes, children, element }: RenderElementProps) => {
   if (!isImage(element)) {
     return null;
   }
-  const imageElement = element as ImageElement;
-  const { url, alternativeText, width, height } = imageElement.image; 
+  const { url, alternativeText, width, height } = (element as ImageElement).image;
 
   return (
     <Box {...attributes}>
@@ -91,15 +90,8 @@ const Image = ({ attributes, children, element }: RenderElementProps) => {
 const ImageDialog = () => {
   const [isOpen, setIsOpen] = React.useState(true);
   const { editor } = useBlocksEditorContext('ImageDialog');
-  const components = useStrapiApp('ImageDialog', (state) => state.components);
 
-  if (!components || !isOpen) return null;
-
-  const MediaLibraryDialog = components['media-library'] as React.ComponentType<{
-    allowedTypes: Schema.Attribute.MediaKind[];
-    onClose: () => void;
-    onSelectAssets: (_images: Schema.Attribute.MediaValue<true>) => void;
-  }>;
+  if (!isOpen) return null;
 
   const insertImages = (images: Block<'image'>['image'][]) => {
     // If the selection is inside a list, split the list so that the modified block is outside of it
@@ -128,11 +120,12 @@ const ImageDialog = () => {
 
     // Convert images to nodes and insert them
     const nodesToInsert = images.map((image) => {
+      // @ts-ignore
       const imageNode: Block<'image'> = {
         type: 'image',
         image,
         children: [{ type: 'text', text: '' }],
-      } as Block<'image'>;
+      };
       return imageNode;
     });
     Transforms.insertNodes(editor, nodesToInsert, { at: pathToInsert });
@@ -146,11 +139,12 @@ const ImageDialog = () => {
       // Create an object with imageSchema defined and exclude unnecessary props coming from media library config
       const expectedImage = pick(image, IMAGE_SCHEMA_FIELDS);
 
+      // @ts-ignore
       const nodeImage: Block<'image'>['image'] = {
         ...expectedImage,
         alternativeText: expectedImage.alternativeText || expectedImage.name,
         url: prefixFileUrlWithBackendUrl(image.url),
-      } as Block<'image'>['image'];
+      };
 
       return nodeImage;
     });
@@ -161,9 +155,11 @@ const ImageDialog = () => {
 
   return (
     <MediaLibraryDialog
+      open={isOpen}
       allowedTypes={['images']}
       onClose={() => setIsOpen(false)}
       onSelectAssets={handleSelectAssets}
+      multiple={true}
     />
   );
 };
@@ -178,14 +174,19 @@ const imageBlocks: Pick<BlocksStore, 'image'> = {
     },
     matchNode: (node) => node.type === 'image',
     isInBlocksSelector: true,
-    handleBackspaceKey(editor) {
+    handleBackspaceKey(editor, event) {
+      // Prevent default backspace behavior
+      if (event) {
+        event.preventDefault();
+      }
+
       // Prevent issue where the image remains when it's the only block in the document
       if (editor.children.length === 1) {
         Transforms.setNodes(editor, {
           type: 'paragraph',
           image: null,
           children: [{ type: 'text', text: '' }],
-        } as Block<'image'>);
+        } as Block<'paragraph'>);
       } else {
         Transforms.removeNodes(editor);
       }
@@ -194,7 +195,7 @@ const imageBlocks: Pick<BlocksStore, 'image'> = {
       Transforms.insertNodes(editor, {
         type: 'paragraph',
         children: [{ type: 'text', text: '' }],
-      } as Block<'image'>);
+      } as Block<'paragraph'>);
     },
     handleConvert: () => {
       /**

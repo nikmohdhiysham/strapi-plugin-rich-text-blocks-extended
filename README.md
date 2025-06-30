@@ -21,21 +21,28 @@ An extended version of the JSON based native Strapi field "Rich Text (Blocks)" t
 - 🔄 Expandable editor interface
 - ➖ Separator blocks with customizable styling
 
-## ⚠️ Known Limitations
+## 🖼️ Image Block Support
 
-Due to Strapi's custom field architecture limitations:
+The image block is now fully functional! Thanks to the integration with `strapi-plugin-media-extended`, you can:
 
-1. **Media Library Integration**: The image block does not work. This is because Strapi's custom fields cannot officially use special data types like media.
+- Select single or multiple images from the media library
+- Upload new images directly from the editor
+- Organize images in folders
+- Full media library functionality within the rich text editor
+
+**Note**: The `strapi-plugin-media-extended` plugin is used for image block functionality.
 
 ## ⚙️ Installation
 
 ```bash
 # Using npm
-npm install strapi-plugin-rich-text-blocks-extended
+npm install strapi-plugin-rich-text-blocks-extended strapi-plugin-media-extended
 
 # Using yarn
-yarn add strapi-plugin-rich-text-blocks-extended
+yarn add strapi-plugin-rich-text-blocks-extended strapi-plugin-media-extended
 ```
+
+**Note**: The `strapi-plugin-media-extended` package is required for image block functionality.
 
 ## 🔧 Configuration
 
@@ -145,7 +152,7 @@ The plugin supports various block types including:
 - Headings (H1-H6)
 - Lists
 - Links
-- Images
+- Images (with full media library support)
 - Quotes
 - Code blocks
 - Separators
@@ -155,10 +162,12 @@ The plugin supports various block types including:
 The separator block allows you to add visual dividers between content sections with the following customizable options:
 
 **Non-viewport specific settings:**
+
 - **Style**: Choose from solid, dashed, dotted, or double line styles
 - **Color**: Select from the available color palette
 
 **Viewport-specific settings (configurable per device breakpoint):**
+
 - **Size**: Control the thickness of the separator (0-100)
 - **Length**: Set the width percentage of the separator (0-100%)
 - **Orientation**: Choose between horizontal or vertical orientation

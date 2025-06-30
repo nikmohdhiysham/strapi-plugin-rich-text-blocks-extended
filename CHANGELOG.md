@@ -2,6 +2,26 @@
 
 All notable changes to the strapi-plugin-rich-text-blocks-extended plugin will be documented in this file.
 
+## [1.2.0]
+
+### Added
+
+- Full image block functionality with media library integration
+  - Select single or multiple images from media library
+  - Upload new images directly from the editor
+  - Organize images in folders
+  - Complete media library features within the rich text editor
+  - Integration with `strapi-plugin-media-extended` for enhanced functionality
+
+### Changed
+
+- Image blocks now work seamlessly in custom field contexts
+- Removed previous limitation regarding media library integration
+
+### Dependencies
+
+- Added `strapi-plugin-media-extended` as a required dependency for image block functionality
+
 ## [1.1.0]
 
 ### Added
